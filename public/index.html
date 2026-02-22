@@ -250,6 +250,13 @@
         color: #ffd36b;
         border-color: #8b6a1c;
       }
+      .mini-btn.delete {
+        color: #ff9aa4;
+        border-color: #7a2e38;
+      }
+      .mini-btn.delete:hover {
+        background: rgba(184, 50, 50, 0.35);
+      }
       .edit-input {
         width: 100%;
         height: 34px;
@@ -881,6 +888,7 @@
                   <button class="mini-btn" data-action="move-down" data-id="${encodedId}" title="下へ"><i class="fa-solid fa-arrow-down"></i></button>
                   <button class="mini-btn" data-action="edit" data-id="${encodedId}" title="編集"><i class="fa-solid fa-pen"></i></button>
                   <button class="mini-btn ${pinClass}" data-action="pin" data-id="${encodedId}" title="${pinTitle}"><i class="fa-solid fa-thumbtack"></i></button>
+                  <button class="mini-btn delete" data-action="delete" data-id="${encodedId}" title="削除"><i class="fa-solid fa-trash"></i></button>
                 </div>
               </td>
             </tr>
@@ -979,6 +987,17 @@
               body: JSON.stringify(payload),
             });
             editingTargetId = null;
+          } else if (action === "delete") {
+            const current = latestTargets.find((t) => t.id === id);
+            const name = current?.name || "この監視対象";
+            const confirmed = window.confirm(`${name} を削除しますか？`);
+            if (!confirmed) return;
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}`, {
+              method: "DELETE",
+            });
+            if (editingTargetId === id) {
+              editingTargetId = null;
+            }
           }
           await loadTargets();
           loadStatus();

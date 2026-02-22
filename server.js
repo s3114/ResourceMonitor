@@ -76,6 +76,17 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (targetId && /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) && req.method === "DELETE") {
+    const targets = readTargets();
+    const idx = targets.findIndex((t) => t.id === targetId);
+    if (idx < 0) {
+      return sendJson(res, 404, { error: "対象が見つかりません。" });
+    }
+    const [removed] = targets.splice(idx, 1);
+    writeTargets(targets);
+    return sendJson(res, 200, { ok: true, removed });
+  }
+
   if (targetId && parsedUrl.pathname.endsWith("/pin") && req.method === "POST") {
     try {
       const body = await readJsonBody(req);
