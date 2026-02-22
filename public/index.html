@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <title>簡易リソースモニター</title>
     <style>
       :root {
         --bg: #0f0f0f;
-        --panel: rgba(18, 18, 18, 0.78);
+        --panel: rgba(18, 18, 18, 0.45);
         --border: #303030;
         --text: #f1f1f1;
         --subtext: #aaa;
@@ -17,7 +19,7 @@
         --danger-hover: #d04545;
         --ok: #4caf50;
         --ng: #ff6b6b;
-        --input-bg: rgba(255, 255, 255, 0.05);
+        --input-bg: rgba(255, 255, 255, 0.06);
       }
       * {
         box-sizing: border-box;
@@ -39,9 +41,9 @@
         z-index: -2;
         pointer-events: none;
         background:
-          radial-gradient(circle at 10% -10%, rgba(58, 141, 222, 0.22), transparent 42%),
-          radial-gradient(circle at 90% 120%, rgba(255, 0, 0, 0.16), transparent 42%),
-          linear-gradient(140deg, #121212 0%, #0b0b0b 100%);
+          radial-gradient(circle at 10% -10%, rgba(58, 141, 222, 0.18), transparent 44%),
+          radial-gradient(circle at 90% 120%, rgba(255, 0, 0, 0.12), transparent 44%),
+          linear-gradient(140deg, #151515 0%, #0f0f0f 100%);
       }
       body::after {
         content: "";
@@ -49,7 +51,7 @@
         inset: 0;
         z-index: -1;
         pointer-events: none;
-        background: rgba(0, 0, 0, 0.18);
+        background: rgba(0, 0, 0, 0.28);
       }
       .header {
         position: fixed;
@@ -57,15 +59,15 @@
         left: 0;
         right: 0;
         height: 56px;
-        background: rgb(0 0 0 / 34%);
+        background: rgb(0 0 0 / 42%);
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 0 16px;
         z-index: 10;
         width: 100%;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(4px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(6px);
       }
       .container {
         max-width: 1440px;
@@ -80,8 +82,9 @@
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 18px;
-        backdrop-filter: blur(2px);
+        padding: 20px;
+        backdrop-filter: blur(3px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
       }
       h1 {
         margin: 0;
@@ -91,24 +94,39 @@
       .actions,
       .header-buttons {
         display: flex;
-        gap: 10px;
+        gap: 12px;
         margin-left: auto;
+        transform: scale(1.1);
+        flex-shrink: 0;
+        transition:
+          transform 0.22s ease,
+          opacity 0.22s ease;
       }
       h2 {
         margin: 0 0 12px 0;
         font-size: 16px;
       }
       .form-row {
-        display: grid;
-        grid-template-columns: 1fr 140px 1fr auto;
+        display: flex;
+        align-items: center;
+        width: 100%;
         gap: 10px;
+      }
+      .form-row input#ip,
+      .form-row input#name {
+        flex: 1;
+        min-width: 0;
+      }
+      .form-row input#port {
+        width: 140px;
+        flex: 0 0 140px;
       }
       input,
       button {
-        height: 40px;
+        height: 50px;
         border-radius: 8px;
         border: 1px solid var(--border);
-        padding: 0 10px;
+        padding: 0 12px;
         font-size: 14px;
       }
       input {
@@ -123,7 +141,8 @@
         color: #fff;
         cursor: pointer;
         border: none;
-        padding: 0 16px;
+        padding: 0 20px;
+        border-radius: 24px;
         font-weight: 700;
       }
       button:hover {
@@ -145,6 +164,7 @@
       table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
       }
       .table-wrap {
         height: calc(100vh - 290px);
@@ -152,7 +172,7 @@
         overflow: auto;
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: rgba(0, 0, 0, 0.35);
+        background: rgba(0, 0, 0, 0.42);
       }
       th,
       td {
@@ -160,12 +180,35 @@
         text-align: left;
         padding: 10px 8px;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .col-name {
+        width: 20%;
+      }
+      .col-ip {
+        width: 18%;
+      }
+      .col-port {
+        width: 8%;
+      }
+      .col-status {
+        width: 8%;
+      }
+      .col-ms {
+        width: 12%;
+      }
+      .col-detail {
+        width: 20%;
+      }
+      .col-ops {
+        width: 14%;
       }
       th {
         color: #cfcfcf;
         position: sticky;
         top: 0;
-        background: rgba(24, 24, 24, 0.98);
+        background: rgba(22, 22, 22, 0.94);
       }
       .status-up {
         color: var(--ok);
@@ -182,6 +225,47 @@
         color: var(--ng);
         min-height: 22px;
       }
+      .row-actions {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .mini-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0;
+      }
+      .mini-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .mini-btn.pinned {
+        color: #ffd36b;
+        border-color: #8b6a1c;
+      }
+      .edit-input {
+        width: 100%;
+        height: 34px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        padding: 0 8px;
+        font-size: 13px;
+      }
+      .edit-input[type="number"] {
+        width: 90px;
+      }
+      .row-editing td {
+        background: rgba(58, 141, 222, 0.08);
+      }
       .page {
         display: none;
       }
@@ -194,6 +278,116 @@
         justify-content: space-between;
         margin-bottom: 10px;
         gap: 8px;
+      }
+      #checkedAt {
+        margin: 0;
+        min-height: 1.25em;
+        line-height: 1.25;
+        white-space: nowrap;
+      }
+      .status-actions {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .home-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .home-item {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.28);
+        padding: 12px;
+      }
+      .home-item.state-up {
+        border-color: rgba(76, 175, 80, 0.9);
+      }
+      .home-item.state-down {
+        border-color: rgba(255, 107, 107, 0.9);
+      }
+      .home-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 120px;
+        gap: 10px;
+        align-items: center;
+      }
+      .home-name {
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .home-response {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        text-align: right;
+      }
+      .home-response-main {
+        line-height: 1.1;
+      }
+      .home-response-avg {
+        font-size: 11px;
+        color: var(--subtext);
+        line-height: 1.1;
+      }
+      .home-sub {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--subtext);
+      }
+      .home-graph-title {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--subtext);
+      }
+      .home-chart {
+        margin-top: 6px;
+        height: 74px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+        padding: 6px;
+      }
+      .home-chart svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .home-chart .grid line {
+        stroke: rgba(255, 255, 255, 0.12);
+        stroke-width: 1;
+        shape-rendering: crispEdges;
+      }
+      .home-chart path.line {
+        fill: none;
+        stroke: #6cb4ff;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: drop-shadow(0 0 4px rgba(58, 141, 222, 0.35));
+      }
+      .home-chart path.area {
+        fill: url(#chartAreaGradient);
+      }
+      .home-chart circle.point {
+        fill: #cfe7ff;
+        opacity: 0.85;
+      }
+      .home-chart circle.latest {
+        fill: #9ed0ff;
+        stroke: #0f0f0f;
+        stroke-width: 1.2;
+      }
+      .home-chart.empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--subtext);
+        font-size: 12px;
       }
       .icon-btn {
         background: transparent;
@@ -213,21 +407,25 @@
       .icon-btn:hover {
         background: rgba(255, 255, 255, 0.1);
       }
-      .header-buttons .nav-btn.active {
+      .icon-btn:active {
+        background: rgba(255, 0, 0, 0.2);
+      }
+      .icon-btn.active {
         border: 2.5px solid var(--text);
         background: rgba(255, 255, 255, 0.05);
       }
-      .header-buttons .nav-btn:active {
-        background: rgba(255, 0, 0, 0.2);
-      }
       .header-buttons .icon-btn {
-        width: 46px;
-        height: 46px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
       }
-      .nav-icon {
-        width: 22px;
-        height: 22px;
-        fill: currentColor;
+      .header-buttons .nav-btn i {
+        font-size: 18px;
+        line-height: 1;
+      }
+      .icon-btn i {
+        font-size: 18px;
+        line-height: 1;
       }
       @media (max-width: 900px) {
         .header {
@@ -242,14 +440,26 @@
           padding: 12px;
         }
         .form-row {
-          grid-template-columns: 1fr;
+          flex-direction: column;
+          align-items: stretch;
         }
-        .actions {
+        .form-row input#port {
+          width: 100%;
+          flex: 1;
+        }
+        .header-buttons {
           width: 100%;
           justify-content: flex-end;
+          transform: none;
         }
         .table-wrap {
           height: calc(100vh - 380px);
+        }
+        .home-list {
+          grid-template-columns: 1fr;
+        }
+        .home-top {
+          grid-template-columns: minmax(0, 1fr) 90px;
         }
       }
     </style>
@@ -261,21 +471,15 @@
         <div class="header-buttons">
           <button id="navHome" type="button" class="icon-btn nav-btn" title="ホーム"
             aria-label="ホーム">
-            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3 3 10h2v10h6v-6h2v6h6V10h2L12 3z"></path>
-            </svg>
+            <i class="fa-solid fa-home"></i>
           </button>
           <button id="navList" type="button"
             class="icon-btn nav-btn active" title="リスト" aria-label="リスト">
-            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"></path>
-            </svg>
+            <i class="fa-solid fa-list"></i>
           </button>
           <button id="navSettings" type="button" class="icon-btn nav-btn" title="設定"
             aria-label="設定">
-            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m19.14 12.94.04-.94-.04-.94 2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.2 7.2 0 0 0-1.63-.94L14.4 2.8a.5.5 0 0 0-.49-.4h-3.82a.5.5 0 0 0-.49.4l-.36 2.52c-.57.23-1.11.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58-.04.94.04.94-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.64.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.52c.04.24.25.4.49.4h3.82c.24 0 .45-.16.49-.4l.36-2.52c.58-.23 1.13-.54 1.63-.94l2.39.96c.24.1.51.01.64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"></path>
-            </svg>
+            <i class="fa-solid fa-gear"></i>
           </button>
         </div>
       </header>
@@ -283,7 +487,7 @@
       <main id="page-home" class="page">
         <section class="card">
           <h2>ホーム</h2>
-          <p class="muted">ResourceMonitor の監視対象を管理するには「リスト」を開いてください。</p>
+          <div id="homeSummary" class="home-list"></div>
         </section>
       </main>
 
@@ -292,7 +496,7 @@
           <h2>監視対象を追加</h2>
           <form id="targetForm">
             <div class="form-row">
-              <input id="ip" name="ip" placeholder="IP (例: 127.0.0.1)"
+              <input id="ip" name="ip" placeholder="IP/アドレス (例: 127.0.0.1, soari.mydns.jp)"
                 required />
               <input id="port" name="port" type="number" min="1"
                 max="65535" placeholder="ポート (任意)" />
@@ -308,19 +512,26 @@
           <h2>監視一覧</h2>
           <div class="status-row">
             <p id="checkedAt" class="muted"></p>
-            <button id="resetResponseBtn" type="button" class="icon-btn"
-              title="応答時間リセット" aria-label="応答時間リセット">↻</button>
+            <div class="status-actions">
+              <button id="toggleOperationBtn" type="button" class="icon-btn"
+                title="操作モード: OFF" aria-label="操作モード: OFF"><i
+                  class="fa-solid fa-sliders"></i></button>
+              <button id="resetResponseBtn" type="button" class="icon-btn"
+                title="応答時間リセット" aria-label="応答時間リセット"><i
+                  class="fa-solid fa-rotate-right"></i></button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>表示名</th>
-                  <th>IP</th>
-                  <th>ポート</th>
-                  <th>状態</th>
-                  <th>応答時間</th>
-                  <th>理由</th>
+                  <th class="col-name">表示名</th>
+                  <th class="col-ip">IP</th>
+                  <th class="col-port">ポート</th>
+                  <th class="col-ms">応答時間</th>
+                  <th class="col-status">状態</th>
+                  <th class="col-detail">詳細</th>
+                  <th id="th-ops" class="col-ops">操作</th>
                 </tr>
               </thead>
               <tbody id="targetTableBody"></tbody>
@@ -346,15 +557,28 @@
       const pageHome = document.getElementById("page-home");
       const pageList = document.getElementById("page-list");
       const pageSettings = document.getElementById("page-settings");
+      const homeSummary = document.getElementById("homeSummary");
       const form = document.getElementById("targetForm");
       const errorEl = document.getElementById("error");
       const tbody = document.getElementById("targetTableBody");
       const checkedAt = document.getElementById("checkedAt");
+      const toggleOperationBtn = document.getElementById("toggleOperationBtn");
       const resetResponseBtn = document.getElementById("resetResponseBtn");
       const restartBtn = document.getElementById("restartBtn");
       let latestTargets = [];
+      let baseTargets = [];
+      const statusById = new Map();
+      let operationModeEnabled = false;
+      let editingTargetId = null;
+      const responseHistoryByTarget = new Map();
+      let chartIdCounter = 0;
+      const TARGETS_CACHE_KEY = "resource_monitor_targets_cache_v1";
+      const PAGE_ROUTE_KEY = "resource_monitor_page_route_v1";
+      let targetsLoadedOnce = false;
+      let targetsRetryTimer = null;
 
-      function setPage(page) {
+      function setPage(page, options = {}) {
+        const { updateUrl = true, replace = false } = options;
         pageHome.classList.remove("active");
         pageList.classList.remove("active");
         pageSettings.classList.remove("active");
@@ -362,12 +586,26 @@
         navList.classList.remove("active");
         navSettings.classList.remove("active");
 
-        if (page === "home") {
+        const normalized = page === "home" || page === "settings" ? page : "list";
+        saveCurrentPage(normalized);
+
+        if (updateUrl) {
+          const nextHash = `#/${normalized}`;
+          if (window.location.hash !== nextHash) {
+            if (replace) {
+              history.replaceState(null, "", nextHash);
+            } else {
+              history.pushState(null, "", nextHash);
+            }
+          }
+        }
+
+        if (normalized === "home") {
           pageHome.classList.add("active");
           navHome.classList.add("active");
           return;
         }
-        if (page === "settings") {
+        if (normalized === "settings") {
           pageSettings.classList.add("active");
           navSettings.classList.add("active");
           return;
@@ -376,43 +614,281 @@
         navList.classList.add("active");
       }
 
+      async function loadTargets() {
+        try {
+          const res = await fetch("/api/targets");
+          if (!res.ok) throw new Error("targets fetch failed");
+          const data = await res.json();
+          baseTargets = data.targets || [];
+          saveTargetsCache(baseTargets);
+          const viewTargets = getViewTargets();
+          latestTargets = viewTargets;
+          renderHome(viewTargets);
+          renderRows(viewTargets);
+          targetsLoadedOnce = true;
+          stopTargetsRetry();
+          if (errorEl.textContent.includes("監視対象の取得に失敗")) {
+            errorEl.textContent = "";
+          }
+          return true;
+        } catch (err) {
+          if (!latestTargets.length) {
+            errorEl.textContent = "監視対象の取得に失敗しました。";
+          }
+          scheduleTargetsRetry();
+          return false;
+        }
+      }
+
       async function loadStatus() {
         try {
           const res = await fetch("/api/status");
           const data = await res.json();
-          latestTargets = data.targets || [];
-          renderRows(latestTargets);
+          const statusTargets = data.targets || [];
+          statusById.clear();
+          statusTargets.forEach((t) => {
+            if (t && t.id) {
+              statusById.set(t.id, t.status || null);
+            }
+          });
+
+          if (!baseTargets.length && statusTargets.length) {
+            baseTargets = statusTargets.map(({ status, ...rest }) => rest);
+            saveTargetsCache(baseTargets);
+          }
+
+          const viewTargets = getViewTargets();
+          latestTargets = viewTargets;
+          updateResponseHistory(viewTargets);
+          renderHome(viewTargets);
+          renderRows(viewTargets);
           checkedAt.textContent = "最終チェック: " + new Date(data.checkedAt).toLocaleString("ja-JP");
+          if (errorEl.textContent) {
+            errorEl.textContent = "";
+          }
+          if (!targetsLoadedOnce && baseTargets.length) {
+            targetsLoadedOnce = true;
+            stopTargetsRetry();
+          }
         } catch (err) {
-          errorEl.textContent = "状態取得に失敗しました。";
+          if (!latestTargets.length) {
+            errorEl.textContent = "状態取得に失敗しました。";
+          }
         }
+      }
+
+      function getViewTargets() {
+        return baseTargets.map((t) => ({
+          ...t,
+          status: statusById.get(t.id) || null,
+        }));
+      }
+
+      function getTargetKey(target) {
+        return target.id || `${target.name}|${target.ip}|${target.port ?? "-"}`;
+      }
+
+      function updateResponseHistory(targets) {
+        const activeKeys = new Set();
+
+        targets.forEach((target) => {
+          const key = getTargetKey(target);
+          activeKeys.add(key);
+          const history = responseHistoryByTarget.get(key) || [];
+          const value = target.status && typeof target.status.responseMs === "number" ? target.status.responseMs : 0;
+          history.push({
+            value,
+            isUp: !!(target.status && target.status.isUp),
+          });
+          if (history.length > 10) {
+            history.splice(0, history.length - 10);
+          }
+          responseHistoryByTarget.set(key, history);
+        });
+
+        Array.from(responseHistoryByTarget.keys()).forEach((key) => {
+          if (!activeKeys.has(key)) {
+            responseHistoryByTarget.delete(key);
+          }
+        });
+      }
+
+      function renderHome(targets) {
+        if (!targets.length) {
+          homeSummary.innerHTML = "<div class='muted'>監視対象がありません。</div>";
+          return;
+        }
+
+        homeSummary.innerHTML = targets
+          .map((target) => {
+            const up = target.status && target.status.isUp;
+            const responseText = target.status ? (up ? `${target.status.responseMs} ms` : "null") : "-";
+            const ipPort = `${target.ip}:${target.port ?? "-"}`;
+            const key = getTargetKey(target);
+            const history = responseHistoryByTarget.get(key) || [];
+            const avgMs = history.length
+              ? Math.round(history.reduce((sum, h) => sum + (Number(h.value) || 0), 0) / history.length)
+              : null;
+            const avgText = avgMs == null ? "-" : `${avgMs} ms`;
+            const chart = renderHistoryLineChart(history, up);
+            const stateClass = up ? "state-up" : "state-down";
+
+            return `
+              <article class="home-item ${stateClass}">
+                <div class="home-top">
+                  <div class="home-name">${escapeHtml(target.name)}</div>
+                  <div class="home-response">
+                    <div class="home-response-main">${responseText}</div>
+                    <div class="home-response-avg">${avgText}</div>
+                  </div>
+                </div>
+                <div class="home-sub">${escapeHtml(ipPort)}</div>
+                ${chart}
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function renderHistoryLineChart(history, isUp = true) {
+        if (!history.length) {
+          return "<div class='home-chart empty'>データなし</div>";
+        }
+
+        const width = 280;
+        const height = 64;
+        const topPad = 6;
+        const bottomPad = 8;
+        const points = history.slice(-10);
+
+        if (!isUp) {
+          const y = height - bottomPad;
+          return `
+            <div class="home-chart">
+              <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="停止状態の線グラフ">
+                <line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="rgba(255,255,255,0.45)" stroke-width="2"></line>
+              </svg>
+            </div>
+          `;
+        }
+
+        const values = points.map((p) => p.value);
+        const max = Math.max(1, ...values);
+        const min = Math.min(...values);
+        const range = Math.max(1, max - min);
+        const stepX = points.length > 1 ? width / (points.length - 1) : width;
+
+        const coords = points.map((p, i) => {
+          const x = Math.round(i * stepX * 10) / 10;
+          const normalized = (p.value - min) / range;
+          const y = Math.round((height - bottomPad - normalized * (height - topPad - bottomPad)) * 10) / 10;
+          return { x, y, v: p.value };
+        });
+
+        const linePath = buildSmoothPath(coords);
+        const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
+        const circles = coords
+          .map((c, idx) => `<circle class="point${idx === coords.length - 1 ? " latest" : ""}" cx="${c.x}" cy="${c.y}" r="${idx === coords.length - 1 ? "3.2" : "2.2"}"><title>${c.v} ms</title></circle>`)
+          .join("");
+        const grid = [0.25, 0.5, 0.75]
+          .map((p) => {
+            const y = Math.round((height - bottomPad - p * (height - topPad - bottomPad)) * 10) / 10;
+            return `<line x1="0" y1="${y}" x2="${width}" y2="${y}"></line>`;
+          })
+          .join("");
+        const gradientId = `chartAreaGradient-${chartIdCounter++}`;
+
+        return `
+          <div class="home-chart">
+            <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="直近10回の応答時間の線グラフ">
+              <defs>
+                <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(108,180,255,0.32)"></stop>
+                  <stop offset="100%" stop-color="rgba(108,180,255,0.03)"></stop>
+                </linearGradient>
+              </defs>
+              <g class="grid">${grid}</g>
+              <path class="area" d="${areaPath}" style="fill:url(#${gradientId})"></path>
+              <path class="line" d="${linePath}"></path>
+              ${circles}
+            </svg>
+          </div>
+        `;
+      }
+
+      function buildSmoothPath(points) {
+        if (!points.length) return "";
+        if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 0; i < points.length - 1; i += 1) {
+          const p0 = points[i];
+          const p1 = points[i + 1];
+          const cx = (p0.x + p1.x) / 2;
+          d += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
+        return d;
       }
 
       function renderRows(targets) {
         if (!targets.length) {
-          tbody.innerHTML = "<tr><td colspan='6' class='muted'>監視対象がありません。</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='7' class='muted'>監視対象がありません。</td></tr>";
+          applyOperationMode();
           return;
         }
 
         tbody.innerHTML = targets
           .map((t) => {
+            if (editingTargetId === t.id) {
+              const portValue = t.port == null ? "" : String(t.port);
+              const encodedId = encodeURIComponent(t.id || "");
+              return `
+              <tr class="row-editing">
+                <td><input id="edit-name-input" class="edit-input" value="${escapeHtml(t.name)}" /></td>
+                <td><input id="edit-ip-input" class="edit-input" value="${escapeHtml(t.ip)}" /></td>
+                <td><input id="edit-port-input" class="edit-input" type="number" min="1" max="65535" value="${escapeHtml(portValue)}" /></td>
+                <td class="muted">-</td>
+                <td class="muted">-</td>
+                <td class="muted">編集中</td>
+                <td class="op-cell">
+                  <div class="row-actions">
+                    <button class="mini-btn" data-action="edit-save" data-id="${encodedId}" title="保存"><i class="fa-solid fa-check"></i></button>
+                    <button class="mini-btn" data-action="edit-cancel" data-id="${encodedId}" title="キャンセル"><i class="fa-solid fa-xmark"></i></button>
+                  </div>
+                </td>
+              </tr>
+            `;
+            }
+
             const up = t.status && t.status.isUp;
             const statusText = up ? "稼働" : "停止";
             const cls = up ? "status-up" : "status-down";
-            const reason = up ? "-" : t.status.reason || "-";
-            const ms = t.status ? t.status.responseMs + " ms" : "-";
+            const reason = up ? "-" : (t.status && t.status.reason) ? t.status.reason : "-";
+            const ms = t.status ? (up ? `${t.status.responseMs} ms` : "null") : "-";
+            const pinClass = t.pinned ? "pinned" : "";
+            const pinTitle = t.pinned ? "ピン解除" : "ピン留め";
+            const encodedId = encodeURIComponent(t.id || "");
             return `
             <tr>
               <td>${escapeHtml(t.name)}</td>
               <td>${escapeHtml(t.ip)}</td>
               <td>${t.port ?? "-"}</td>
-              <td class="${cls}">${statusText}</td>
               <td>${ms}</td>
+              <td class="${cls}">${statusText}</td>
               <td>${escapeHtml(reason)}</td>
+              <td class="op-cell">
+                <div class="row-actions">
+                  <button class="mini-btn" data-action="move-up" data-id="${encodedId}" title="上へ"><i class="fa-solid fa-arrow-up"></i></button>
+                  <button class="mini-btn" data-action="move-down" data-id="${encodedId}" title="下へ"><i class="fa-solid fa-arrow-down"></i></button>
+                  <button class="mini-btn" data-action="edit" data-id="${encodedId}" title="編集"><i class="fa-solid fa-pen"></i></button>
+                  <button class="mini-btn ${pinClass}" data-action="pin" data-id="${encodedId}" title="${pinTitle}"><i class="fa-solid fa-thumbtack"></i></button>
+                </div>
+              </td>
             </tr>
           `;
           })
           .join("");
+
+        applyOperationMode();
       }
 
       form.addEventListener("submit", async (e) => {
@@ -439,9 +915,77 @@
           }
 
           form.reset();
-          await loadStatus();
+          await loadTargets();
+          loadStatus();
         } catch (err) {
           errorEl.textContent = "通信エラーが発生しました。";
+        }
+      });
+
+      tbody.addEventListener("click", async (e) => {
+        if (!operationModeEnabled) return;
+        const button = e.target.closest("button[data-action]");
+        if (!button) return;
+        const action = button.dataset.action;
+        const encodedId = button.dataset.id;
+        if (!encodedId) return;
+        const id = decodeURIComponent(encodedId);
+
+        errorEl.textContent = "";
+        button.disabled = true;
+        try {
+          if (action === "move-up") {
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}/move`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ direction: "up" }),
+            });
+          } else if (action === "move-down") {
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}/move`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ direction: "down" }),
+            });
+          } else if (action === "pin") {
+            const current = latestTargets.find((t) => t.id === id);
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}/pin`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pinned: !current?.pinned }),
+            });
+          } else if (action === "edit") {
+            editingTargetId = id;
+            renderRows(latestTargets);
+            return;
+          } else if (action === "edit-cancel") {
+            editingTargetId = null;
+            renderRows(latestTargets);
+            return;
+          } else if (action === "edit-save") {
+            const nameInput = document.getElementById("edit-name-input");
+            const ipInput = document.getElementById("edit-ip-input");
+            const portInput = document.getElementById("edit-port-input");
+            if (!nameInput || !ipInput || !portInput) {
+              throw new Error("編集フォームが見つかりません。");
+            }
+            const payload = {
+              name: nameInput.value.trim(),
+              ip: ipInput.value.trim(),
+              port: portInput.value.trim() === "" ? null : Number(portInput.value.trim()),
+            };
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            editingTargetId = null;
+          }
+          await loadTargets();
+          loadStatus();
+        } catch (err) {
+          errorEl.textContent = err.message || "操作に失敗しました。";
+        } finally {
+          button.disabled = false;
         }
       });
 
@@ -474,9 +1018,30 @@
         }
       });
 
+      toggleOperationBtn.addEventListener("click", () => {
+        operationModeEnabled = !operationModeEnabled;
+        if (!operationModeEnabled) {
+          editingTargetId = null;
+          renderRows(latestTargets);
+        }
+        toggleOperationBtn.classList.toggle("active", operationModeEnabled);
+        toggleOperationBtn.title = operationModeEnabled ? "操作モード: ON" : "操作モード: OFF";
+        toggleOperationBtn.setAttribute("aria-label", toggleOperationBtn.title);
+        applyOperationMode();
+      });
+
       navHome.addEventListener("click", () => setPage("home"));
       navList.addEventListener("click", () => setPage("list"));
       navSettings.addEventListener("click", () => setPage("settings"));
+
+      async function fetchJson(url, options) {
+        const res = await fetch(url, options);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "通信に失敗しました。");
+        }
+        return data;
+      }
 
       function escapeHtml(value) {
         return String(value)
@@ -487,8 +1052,102 @@
           .replaceAll("'", "&#39;");
       }
 
+      function applyOperationMode() {
+        const opHeader = document.getElementById("th-ops");
+        const opCells = tbody.querySelectorAll(".op-cell");
+        if (opHeader) {
+          opHeader.style.display = operationModeEnabled ? "" : "none";
+        }
+        opCells.forEach((cell) => {
+          cell.style.display = operationModeEnabled ? "" : "none";
+        });
+      }
+
+      function saveTargetsCache(targets) {
+        try {
+          localStorage.setItem(TARGETS_CACHE_KEY, JSON.stringify(targets || []));
+        } catch (e) {
+          // Ignore storage errors
+        }
+      }
+
+      function loadTargetsCache() {
+        try {
+          const raw = localStorage.getItem(TARGETS_CACHE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function getPageFromHash() {
+        const hash = (window.location.hash || "").toLowerCase();
+        if (hash === "#/home") return "home";
+        if (hash === "#/settings") return "settings";
+        if (hash === "#/list") return "list";
+        return "list";
+      }
+
+      function saveCurrentPage(page) {
+        try {
+          localStorage.setItem(PAGE_ROUTE_KEY, page);
+        } catch (e) {
+          // Ignore storage errors
+        }
+      }
+
+      function loadSavedPage() {
+        try {
+          const page = localStorage.getItem(PAGE_ROUTE_KEY);
+          if (page === "home" || page === "list" || page === "settings") {
+            return page;
+          }
+          return "list";
+        } catch (e) {
+          return "list";
+        }
+      }
+
+      function getInitialPage() {
+        if (window.location.hash) {
+          return getPageFromHash();
+        }
+        return loadSavedPage();
+      }
+
+      function scheduleTargetsRetry() {
+        if (targetsRetryTimer) return;
+        targetsRetryTimer = setInterval(async () => {
+          if (targetsLoadedOnce) {
+            stopTargetsRetry();
+            return;
+          }
+          await loadTargets();
+        }, 1000);
+      }
+
+      function stopTargetsRetry() {
+        if (!targetsRetryTimer) return;
+        clearInterval(targetsRetryTimer);
+        targetsRetryTimer = null;
+      }
+
+      const cachedTargets = loadTargetsCache();
+      if (cachedTargets.length) {
+        baseTargets = cachedTargets;
+        latestTargets = getViewTargets();
+        renderHome(latestTargets);
+        renderRows(latestTargets);
+      }
+      window.addEventListener("hashchange", () => {
+        setPage(getPageFromHash(), { updateUrl: false });
+      });
+      loadTargets();
       loadStatus();
-      setPage("list");
+      setPage(getInitialPage(), { updateUrl: true, replace: true });
+      scheduleTargetsRetry();
       setInterval(loadStatus, 5000);
     </script>
   </body>

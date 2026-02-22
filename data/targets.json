@@ -1,16 +1,27 @@
 [
   {
+    "id": "1771754774523-1kdt78a3",
+    "name": "ゲーム鯖",
+    "ip": "soari.mydns.jp",
+    "port": 58241,
+    "createdAt": "2026-02-22T10:06:14.523Z",
+    "pinned": false,
+    "updatedAt": "2026-02-22T14:42:20.908Z"
+  },
+  {
     "id": "1771738232985-rpra31wh",
     "name": "LocalTube",
     "ip": "192.168.0.75",
     "port": 3000,
-    "createdAt": "2026-02-22T05:30:32.985Z"
+    "createdAt": "2026-02-22T05:30:32.985Z",
+    "pinned": false
   },
   {
     "id": "1771738933799-uak23eyx",
     "name": "トラッカー2",
     "ip": "192.168.0.21",
     "port": null,
-    "createdAt": "2026-02-22T05:42:13.799Z"
+    "createdAt": "2026-02-22T05:42:13.799Z",
+    "pinned": false
   }
 ]

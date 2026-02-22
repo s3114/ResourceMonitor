@@ -14,6 +14,7 @@ ensureDataFile();
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+  const targetId = getTargetIdFromPath(parsedUrl.pathname);
 
   if (parsedUrl.pathname === "/api/targets" && req.method === "GET") {
     return sendJson(res, 200, { targets: readTargets() });
@@ -34,12 +35,88 @@ const server = http.createServer(async (req, res) => {
         name: body.name.trim(),
         ip: body.ip.trim(),
         port,
+        pinned: false,
         createdAt: new Date().toISOString(),
       };
 
       targets.push(newTarget);
       writeTargets(targets);
       return sendJson(res, 201, { target: newTarget });
+    } catch (error) {
+      return sendJson(res, 400, { error: "JSON形式が不正です。" });
+    }
+  }
+
+  if (targetId && /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) && req.method === "PATCH") {
+    try {
+      const body = await readJsonBody(req);
+      const validation = validateTargetInput(body);
+      if (!validation.ok) {
+        return sendJson(res, 400, { error: validation.error });
+      }
+
+      const targets = readTargets();
+      const idx = targets.findIndex((t) => t.id === targetId);
+      if (idx < 0) {
+        return sendJson(res, 404, { error: "対象が見つかりません。" });
+      }
+
+      targets[idx] = {
+        ...targets[idx],
+        name: body.name.trim(),
+        ip: body.ip.trim(),
+        port: parsePort(body.port),
+        updatedAt: new Date().toISOString(),
+      };
+
+      writeTargets(targets);
+      return sendJson(res, 200, { target: targets[idx] });
+    } catch (error) {
+      return sendJson(res, 400, { error: "JSON形式が不正です。" });
+    }
+  }
+
+  if (targetId && parsedUrl.pathname.endsWith("/pin") && req.method === "POST") {
+    try {
+      const body = await readJsonBody(req);
+      const targets = readTargets();
+      const idx = targets.findIndex((t) => t.id === targetId);
+      if (idx < 0) {
+        return sendJson(res, 404, { error: "対象が見つかりません。" });
+      }
+
+      const current = targets[idx];
+      const shouldPin = typeof body.pinned === "boolean" ? body.pinned : !current.pinned;
+      current.pinned = shouldPin;
+      current.updatedAt = new Date().toISOString();
+      moveByPinRule(targets, idx, shouldPin);
+      writeTargets(targets);
+      return sendJson(res, 200, { target: current });
+    } catch (error) {
+      return sendJson(res, 400, { error: "JSON形式が不正です。" });
+    }
+  }
+
+  if (targetId && parsedUrl.pathname.endsWith("/move") && req.method === "POST") {
+    try {
+      const body = await readJsonBody(req);
+      const direction = body.direction === "up" ? "up" : body.direction === "down" ? "down" : null;
+      if (!direction) {
+        return sendJson(res, 400, { error: "direction は up/down を指定してください。" });
+      }
+
+      const targets = readTargets();
+      const idx = targets.findIndex((t) => t.id === targetId);
+      if (idx < 0) {
+        return sendJson(res, 404, { error: "対象が見つかりません。" });
+      }
+
+      const swapped = moveTargetInGroup(targets, idx, direction);
+      if (!swapped) {
+        return sendJson(res, 200, { ok: true, unchanged: true });
+      }
+      writeTargets(targets);
+      return sendJson(res, 200, { ok: true });
     } catch (error) {
       return sendJson(res, 400, { error: "JSON形式が不正です。" });
     }
@@ -88,7 +165,7 @@ function readTargets() {
   try {
     const raw = fs.readFileSync(TARGETS_FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeTarget) : [];
   } catch (error) {
     return [];
   }
@@ -132,8 +209,8 @@ function validateTargetInput(body) {
     return { ok: false, error: "表示名は必須です。" };
   }
 
-  if (!net.isIP(ip)) {
-    return { ok: false, error: "IPアドレス形式が不正です。" };
+  if (!isValidHost(ip)) {
+    return { ok: false, error: "IPまたはホスト名（例: soari.mydns.jp）を入力してください。" };
   }
 
   if (port !== null && (!Number.isInteger(port) || port < 1 || port > 65535)) {
@@ -143,11 +220,34 @@ function validateTargetInput(body) {
   return { ok: true };
 }
 
+function isValidHost(value) {
+  if (net.isIP(value)) {
+    return true;
+  }
+
+  // Allow common hostname/FQDN forms: labels of 1-63 chars, alnum/hyphen, no leading/trailing hyphen.
+  const hostnameRegex =
+    /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)$/;
+
+  return hostnameRegex.test(value);
+}
+
 function parsePort(value) {
   if (value === undefined || value === null) return null;
   if (typeof value === "string" && value.trim() === "") return null;
   const num = Number(value);
   return Number.isFinite(num) ? num : NaN;
+}
+
+function normalizeTarget(target) {
+  return {
+    ...target,
+    id: String(target.id || createId()),
+    name: String(target.name || ""),
+    ip: String(target.ip || ""),
+    port: parsePort(target.port),
+    pinned: !!target.pinned,
+  };
 }
 
 function createId() {
@@ -221,6 +321,56 @@ function scheduleRestart() {
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 1000);
   }, 300);
+}
+
+function getTargetIdFromPath(pathname) {
+  const match = pathname.match(/^\/api\/targets\/([^/]+)(?:\/(pin|move))?$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function moveByPinRule(targets, idx, pinned) {
+  const [item] = targets.splice(idx, 1);
+  if (!item) return;
+
+  if (pinned) {
+    const firstUnpinned = targets.findIndex((t) => !t.pinned);
+    const insertAt = firstUnpinned === -1 ? targets.length : firstUnpinned;
+    targets.splice(insertAt, 0, item);
+    return;
+  }
+
+  const lastPinned = findLastIndex(targets, (t) => t.pinned);
+  targets.splice(lastPinned + 1, 0, item);
+}
+
+function moveTargetInGroup(targets, idx, direction) {
+  const source = targets[idx];
+  if (!source) return false;
+
+  if (direction === "up") {
+    for (let i = idx - 1; i >= 0; i -= 1) {
+      if (!!targets[i].pinned === !!source.pinned) {
+        [targets[i], targets[idx]] = [targets[idx], targets[i]];
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (let i = idx + 1; i < targets.length; i += 1) {
+    if (!!targets[i].pinned === !!source.pinned) {
+      [targets[i], targets[idx]] = [targets[idx], targets[i]];
+      return true;
+    }
+  }
+  return false;
+}
+
+function findLastIndex(items, predicate) {
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    if (predicate(items[i])) return i;
+  }
+  return -1;
 }
 
 function serveStaticFile(pathname, res) {
