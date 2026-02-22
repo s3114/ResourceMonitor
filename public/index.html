@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>簡易リソースモニター</title>
+    <style>
+      :root {
+        --bg: #0f0f0f;
+        --panel: rgba(18, 18, 18, 0.78);
+        --border: #303030;
+        --text: #f1f1f1;
+        --subtext: #aaa;
+        --accent: #3a8dde;
+        --accent-hover: #53a1ec;
+        --danger: #b83232;
+        --danger-hover: #d04545;
+        --ok: #4caf50;
+        --ng: #ff6b6b;
+        --input-bg: rgba(255, 255, 255, 0.05);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Roboto, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        position: relative;
+        isolation: isolate;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 10% -10%, rgba(58, 141, 222, 0.22), transparent 42%),
+          radial-gradient(circle at 90% 120%, rgba(255, 0, 0, 0.16), transparent 42%),
+          linear-gradient(140deg, #121212 0%, #0b0b0b 100%);
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: rgb(0 0 0 / 34%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        z-index: 10;
+        width: 100%;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(4px);
+      }
+      .container {
+        max-width: 1440px;
+        min-height: calc(100vh - 56px);
+        margin: 56px auto 0;
+        padding: 18px;
+      }
+      .card + .card {
+        margin-top: 14px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        backdrop-filter: blur(2px);
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .actions,
+      .header-buttons {
+        display: flex;
+        gap: 10px;
+        margin-left: auto;
+      }
+      h2 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 140px 1fr auto;
+        gap: 10px;
+      }
+      input,
+      button {
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        padding: 0 10px;
+        font-size: 14px;
+      }
+      input {
+        background: var(--input-bg);
+        color: var(--text);
+      }
+      input::placeholder {
+        color: var(--subtext);
+      }
+      button {
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        border: none;
+        padding: 0 16px;
+        font-weight: 700;
+      }
+      button:hover {
+        background: var(--accent-hover);
+      }
+      button.subtle {
+        background: #2a2a2a;
+        border: 1px solid var(--border);
+      }
+      button.subtle:hover {
+        background: #383838;
+      }
+      button.danger {
+        background: var(--danger);
+      }
+      button.danger:hover {
+        background: var(--danger-hover);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .table-wrap {
+        height: calc(100vh - 290px);
+        min-height: 300px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.35);
+      }
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        padding: 10px 8px;
+        white-space: nowrap;
+      }
+      th {
+        color: #cfcfcf;
+        position: sticky;
+        top: 0;
+        background: rgba(24, 24, 24, 0.98);
+      }
+      .status-up {
+        color: var(--ok);
+        font-weight: 600;
+      }
+      .status-down {
+        color: var(--ng);
+        font-weight: 600;
+      }
+      .muted {
+        color: var(--subtext);
+      }
+      .error {
+        color: var(--ng);
+        min-height: 22px;
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+      .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        gap: 8px;
+      }
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: background 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      }
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .header-buttons .nav-btn.active {
+        border: 2.5px solid var(--text);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .header-buttons .nav-btn:active {
+        background: rgba(255, 0, 0, 0.2);
+      }
+      .header-buttons .icon-btn {
+        width: 46px;
+        height: 46px;
+      }
+      .nav-icon {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+      }
+      @media (max-width: 900px) {
+        .header {
+          height: auto;
+          min-height: 56px;
+          padding: 8px 12px;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .container {
+          margin-top: 64px;
+          padding: 12px;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .table-wrap {
+          height: calc(100vh - 380px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>ResourceMonitor</h1>
+        <div class="header-buttons">
+          <button id="navHome" type="button" class="icon-btn nav-btn" title="ホーム"
+            aria-label="ホーム">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3 3 10h2v10h6v-6h2v6h6V10h2L12 3z"></path>
+            </svg>
+          </button>
+          <button id="navList" type="button"
+            class="icon-btn nav-btn active" title="リスト" aria-label="リスト">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16v2H4V5zm0 6h16v2H4v-2zm0 6h16v2H4v-2z"></path>
+            </svg>
+          </button>
+          <button id="navSettings" type="button" class="icon-btn nav-btn" title="設定"
+            aria-label="設定">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m19.14 12.94.04-.94-.04-.94 2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.2 7.2 0 0 0-1.63-.94L14.4 2.8a.5.5 0 0 0-.49-.4h-3.82a.5.5 0 0 0-.49.4l-.36 2.52c-.57.23-1.11.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58-.04.94.04.94-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.64.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.52c.04.24.25.4.49.4h3.82c.24 0 .45-.16.49-.4l.36-2.52c.58-.23 1.13-.54 1.63-.94l2.39.96c.24.1.51.01.64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main id="page-home" class="page">
+        <section class="card">
+          <h2>ホーム</h2>
+          <p class="muted">ResourceMonitor の監視対象を管理するには「リスト」を開いてください。</p>
+        </section>
+      </main>
+
+      <main id="page-list" class="page active">
+        <section class="card">
+          <h2>監視対象を追加</h2>
+          <form id="targetForm">
+            <div class="form-row">
+              <input id="ip" name="ip" placeholder="IP (例: 127.0.0.1)"
+                required />
+              <input id="port" name="port" type="number" min="1"
+                max="65535" placeholder="ポート (任意)" />
+              <input id="name" name="name"
+                placeholder="表示名 (例: ローカルAPI)" required />
+              <button type="submit">追加</button>
+            </div>
+            <p id="error" class="error"></p>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>監視一覧</h2>
+          <div class="status-row">
+            <p id="checkedAt" class="muted"></p>
+            <button id="resetResponseBtn" type="button" class="icon-btn"
+              title="応答時間リセット" aria-label="応答時間リセット">↻</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>表示名</th>
+                  <th>IP</th>
+                  <th>ポート</th>
+                  <th>状態</th>
+                  <th>応答時間</th>
+                  <th>理由</th>
+                </tr>
+              </thead>
+              <tbody id="targetTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <main id="page-settings" class="page">
+        <section class="card">
+          <h2>設定</h2>
+          <p class="muted">サーバー管理</p>
+          <button id="restartBtn" type="button"
+            class="danger">サーバー再起動</button>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const navHome = document.getElementById("navHome");
+      const navList = document.getElementById("navList");
+      const navSettings = document.getElementById("navSettings");
+      const pageHome = document.getElementById("page-home");
+      const pageList = document.getElementById("page-list");
+      const pageSettings = document.getElementById("page-settings");
+      const form = document.getElementById("targetForm");
+      const errorEl = document.getElementById("error");
+      const tbody = document.getElementById("targetTableBody");
+      const checkedAt = document.getElementById("checkedAt");
+      const resetResponseBtn = document.getElementById("resetResponseBtn");
+      const restartBtn = document.getElementById("restartBtn");
+      let latestTargets = [];
+
+      function setPage(page) {
+        pageHome.classList.remove("active");
+        pageList.classList.remove("active");
+        pageSettings.classList.remove("active");
+        navHome.classList.remove("active");
+        navList.classList.remove("active");
+        navSettings.classList.remove("active");
+
+        if (page === "home") {
+          pageHome.classList.add("active");
+          navHome.classList.add("active");
+          return;
+        }
+        if (page === "settings") {
+          pageSettings.classList.add("active");
+          navSettings.classList.add("active");
+          return;
+        }
+        pageList.classList.add("active");
+        navList.classList.add("active");
+      }
+
+      async function loadStatus() {
+        try {
+          const res = await fetch("/api/status");
+          const data = await res.json();
+          latestTargets = data.targets || [];
+          renderRows(latestTargets);
+          checkedAt.textContent = "最終チェック: " + new Date(data.checkedAt).toLocaleString("ja-JP");
+        } catch (err) {
+          errorEl.textContent = "状態取得に失敗しました。";
+        }
+      }
+
+      function renderRows(targets) {
+        if (!targets.length) {
+          tbody.innerHTML = "<tr><td colspan='6' class='muted'>監視対象がありません。</td></tr>";
+          return;
+        }
+
+        tbody.innerHTML = targets
+          .map((t) => {
+            const up = t.status && t.status.isUp;
+            const statusText = up ? "稼働" : "停止";
+            const cls = up ? "status-up" : "status-down";
+            const reason = up ? "-" : t.status.reason || "-";
+            const ms = t.status ? t.status.responseMs + " ms" : "-";
+            return `
+            <tr>
+              <td>${escapeHtml(t.name)}</td>
+              <td>${escapeHtml(t.ip)}</td>
+              <td>${t.port ?? "-"}</td>
+              <td class="${cls}">${statusText}</td>
+              <td>${ms}</td>
+              <td>${escapeHtml(reason)}</td>
+            </tr>
+          `;
+          })
+          .join("");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.textContent = "";
+
+        const portValue = form.port.value.trim();
+        const payload = {
+          ip: form.ip.value,
+          port: portValue === "" ? null : Number(portValue),
+          name: form.name.value,
+        };
+
+        try {
+          const res = await fetch("/api/targets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            errorEl.textContent = data.error || "追加に失敗しました。";
+            return;
+          }
+
+          form.reset();
+          await loadStatus();
+        } catch (err) {
+          errorEl.textContent = "通信エラーが発生しました。";
+        }
+      });
+
+      resetResponseBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        try {
+          const res = await fetch("/api/response-time/reset", { method: "POST" });
+          if (!res.ok) throw new Error("reset failed");
+          await loadStatus();
+        } catch (err) {
+          errorEl.textContent = "応答時間のリセットに失敗しました。";
+        }
+      });
+
+      restartBtn.addEventListener("click", async () => {
+        errorEl.textContent = "";
+        restartBtn.disabled = true;
+        restartBtn.textContent = "再起動中...";
+        try {
+          const res = await fetch("/api/restart", { method: "POST" });
+          if (!res.ok) throw new Error("restart failed");
+          checkedAt.textContent = "最終チェック: サーバー再起動を実行しました。数秒後に再接続します。";
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+        } catch (err) {
+          restartBtn.disabled = false;
+          restartBtn.textContent = "サーバー再起動";
+          errorEl.textContent = "サーバー再起動に失敗しました。";
+        }
+      });
+
+      navHome.addEventListener("click", () => setPage("home"));
+      navList.addEventListener("click", () => setPage("list"));
+      navSettings.addEventListener("click", () => setPage("settings"));
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      loadStatus();
+      setPage("list");
+      setInterval(loadStatus, 5000);
+    </script>
+  </body>
+</html>
