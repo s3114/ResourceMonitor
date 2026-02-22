@@ -396,7 +396,13 @@ function serveStaticFile(pathname, res) {
     if (err) {
       return sendText(res, 404, "Not Found");
     }
-    res.writeHead(200, { "Content-Type": getContentType(filePath) });
+    const headers = { "Content-Type": getContentType(filePath) };
+    if (path.basename(filePath).toLowerCase().startsWith("favicon")) {
+      headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+      headers.Pragma = "no-cache";
+      headers.Expires = "0";
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 }
@@ -407,6 +413,10 @@ function getContentType(filePath) {
   if (ext === ".js") return "application/javascript; charset=utf-8";
   if (ext === ".css") return "text/css; charset=utf-8";
   if (ext === ".json") return "application/json; charset=utf-8";
+  if (ext === ".webmanifest") return "application/manifest+json; charset=utf-8";
+  if (ext === ".ico") return "image/x-icon";
+  if (ext === ".png") return "image/png";
+  if (ext === ".svg") return "image/svg+xml";
   return "application/octet-stream";
 }
 

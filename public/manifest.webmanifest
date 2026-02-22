@@ -1,0 +1,18 @@
+{
+  "name": "ResourceMonitor",
+  "short_name": "ResMon",
+  "description": "ローカルサーバーの簡易リソースモニター",
+  "start_url": "/#/list",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "icons": [
+    {
+      "src": "/favicon-v3.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ]
+}

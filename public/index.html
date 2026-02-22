@@ -3,9 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f0f0f" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ResourceMonitor" />
+    <link rel="icon" type="image/x-icon" href="/favicon-v3.ico" />
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon-v3.ico" />
+    <link rel="apple-touch-icon" href="/favicon-v3.ico" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <title>簡易リソースモニター</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>ResourceMonitor</title>
     <style>
       :root {
         --bg: #0f0f0f;
@@ -90,6 +99,17 @@
         margin: 0;
         font-size: 18px;
         font-weight: 700;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .brand-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        object-fit: cover;
       }
       .actions,
       .header-buttons {
@@ -436,31 +456,73 @@
       }
       @media (max-width: 900px) {
         .header {
-          height: auto;
+          height: 56px;
           min-height: 56px;
-          padding: 8px 12px;
-          flex-wrap: wrap;
-          gap: 8px;
+          padding: 0 12px;
+          flex-wrap: nowrap;
+          gap: 10px;
+        }
+        .brand {
+          min-width: 0;
+        }
+        .brand h1 {
+          font-size: 16px;
+          white-space: nowrap;
         }
         .container {
           margin-top: 64px;
-          padding: 12px;
+          padding: 10px;
+        }
+        .card {
+          padding: 14px;
         }
         .form-row {
           flex-direction: column;
           align-items: stretch;
+        }
+        #page-list .form-row {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        #page-list .form-row input,
+        #page-list .form-row button {
+          width: 100%;
+          min-width: 0;
         }
         .form-row input#port {
           width: 100%;
           flex: 1;
         }
         .header-buttons {
-          width: 100%;
+          width: auto;
           justify-content: flex-end;
           transform: none;
+          margin-left: auto;
+          flex-shrink: 0;
         }
         .table-wrap {
           height: calc(100vh - 380px);
+        }
+        #page-list .col-ip,
+        #page-list .col-port,
+        #page-list .col-detail,
+        #page-list .col-ip-cell,
+        #page-list .col-port-cell,
+        #page-list .col-detail-cell {
+          display: none;
+        }
+        #page-list .col-name {
+          width: 36%;
+        }
+        #page-list .col-ms {
+          width: 22%;
+        }
+        #page-list .col-status {
+          width: 18%;
+        }
+        #page-list .col-ops {
+          width: 24%;
         }
         .home-list {
           grid-template-columns: 1fr;
@@ -474,9 +536,13 @@
   <body>
     <div class="container">
       <header class="header">
-        <h1>ResourceMonitor</h1>
+        <div class="brand">
+          <img class="brand-icon" src="/favicon.ico" alt="ResourceMonitor icon" />
+          <h1>ResourceMonitor</h1>
+        </div>
         <div class="header-buttons">
-          <button id="navHome" type="button" class="icon-btn nav-btn" title="ホーム"
+          <button id="navHome" type="button" class="icon-btn nav-btn"
+            title="ホーム"
             aria-label="ホーム">
             <i class="fa-solid fa-home"></i>
           </button>
@@ -484,7 +550,8 @@
             class="icon-btn nav-btn active" title="リスト" aria-label="リスト">
             <i class="fa-solid fa-list"></i>
           </button>
-          <button id="navSettings" type="button" class="icon-btn nav-btn" title="設定"
+          <button id="navSettings" type="button" class="icon-btn nav-btn"
+            title="設定"
             aria-label="設定">
             <i class="fa-solid fa-gear"></i>
           </button>
@@ -493,7 +560,6 @@
 
       <main id="page-home" class="page">
         <section class="card">
-          <h2>ホーム</h2>
           <div id="homeSummary" class="home-list"></div>
         </section>
       </main>
@@ -503,7 +569,8 @@
           <h2>監視対象を追加</h2>
           <form id="targetForm">
             <div class="form-row">
-              <input id="ip" name="ip" placeholder="IP/アドレス (例: 127.0.0.1, soari.mydns.jp)"
+              <input id="ip" name="ip"
+                placeholder="IP/アドレス (例: 127.0.0.1, soari.mydns.jp)"
                 required />
               <input id="port" name="port" type="number" min="1"
                 max="65535" placeholder="ポート (任意)" />
@@ -851,11 +918,11 @@
               return `
               <tr class="row-editing">
                 <td><input id="edit-name-input" class="edit-input" value="${escapeHtml(t.name)}" /></td>
-                <td><input id="edit-ip-input" class="edit-input" value="${escapeHtml(t.ip)}" /></td>
-                <td><input id="edit-port-input" class="edit-input" type="number" min="1" max="65535" value="${escapeHtml(portValue)}" /></td>
+                <td class="col-ip-cell"><input id="edit-ip-input" class="edit-input" value="${escapeHtml(t.ip)}" /></td>
+                <td class="col-port-cell"><input id="edit-port-input" class="edit-input" type="number" min="1" max="65535" value="${escapeHtml(portValue)}" /></td>
                 <td class="muted">-</td>
                 <td class="muted">-</td>
-                <td class="muted">編集中</td>
+                <td class="muted col-detail-cell">編集中</td>
                 <td class="op-cell">
                   <div class="row-actions">
                     <button class="mini-btn" data-action="edit-save" data-id="${encodedId}" title="保存"><i class="fa-solid fa-check"></i></button>
@@ -877,11 +944,11 @@
             return `
             <tr>
               <td>${escapeHtml(t.name)}</td>
-              <td>${escapeHtml(t.ip)}</td>
-              <td>${t.port ?? "-"}</td>
+              <td class="col-ip-cell">${escapeHtml(t.ip)}</td>
+              <td class="col-port-cell">${t.port ?? "-"}</td>
               <td>${ms}</td>
               <td class="${cls}">${statusText}</td>
-              <td>${escapeHtml(reason)}</td>
+              <td class="col-detail-cell">${escapeHtml(reason)}</td>
               <td class="op-cell">
                 <div class="row-actions">
                   <button class="mini-btn" data-action="move-up" data-id="${encodedId}" title="上へ"><i class="fa-solid fa-arrow-up"></i></button>
@@ -1168,6 +1235,16 @@
       setPage(getInitialPage(), { updateUrl: true, replace: true });
       scheduleTargetsRetry();
       setInterval(loadStatus, 5000);
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
+          try {
+            await navigator.serviceWorker.register("/service-worker.js");
+          } catch (error) {
+            console.error("Service Worker registration failed:", error);
+          }
+        });
+      }
     </script>
   </body>
 </html>
