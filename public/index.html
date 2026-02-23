@@ -594,19 +594,36 @@
       }
       .chip-row {
         width: 100%;
+        height: auto;
+        min-height: 76px;
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: rgba(0, 0, 0, 0.32);
-        padding: 10px;
+        background: rgba(0, 0, 0, 0.18);
+        padding: 0;
+        overflow: hidden;
         color: var(--text);
         text-align: left;
         cursor: pointer;
       }
       .chip-row.active {
         border-color: rgba(108, 180, 255, 0.8);
+        background: rgba(108, 180, 255, 0.08);
+      }
+      .chip-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+      .chip-row.active:hover {
         background: rgba(108, 180, 255, 0.12);
+        border-color: rgba(108, 180, 255, 0.85);
       }
       .chip-row-head {
+        display: grid;
+        gap: 4px;
+        padding: 10px 12px;
+        /* background: rgba(18, 34, 50, 0.65); */
+      }
+      .chip-row-top {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
@@ -621,12 +638,10 @@
         font-weight: 700;
       }
       .chip-row-sub {
-        margin-top: 4px;
         font-size: 12px;
         color: var(--subtext);
       }
       .chip-meter {
-        margin-top: 8px;
         width: 100%;
         height: 6px;
         border-radius: 999px;
@@ -840,27 +855,33 @@
             <aside class="chip-sidebar">
               <button id="chipRowCpu" type="button" class="chip-row active">
                 <div class="chip-row-head">
-                  <span class="chip-row-title">CPU</span>
-                  <span id="cpuUsageValue" class="chip-row-value">-</span>
+                  <div class="chip-row-top">
+                    <span class="chip-row-title">CPU</span>
+                    <span id="cpuUsageValue" class="chip-row-value">-</span>
+                  </div>
+                  <div id="cpuUsageSub" class="chip-row-sub">-</div>
+                  <div class="chip-meter"><div id="cpuUsageBar" class="chip-meter-bar"></div></div>
                 </div>
-                <div id="cpuUsageSub" class="chip-row-sub">-</div>
-                <div class="chip-meter"><div id="cpuUsageBar" class="chip-meter-bar"></div></div>
               </button>
               <button id="chipRowMemory" type="button" class="chip-row">
                 <div class="chip-row-head">
-                  <span class="chip-row-title">メモリ</span>
-                  <span id="memoryUsageValue" class="chip-row-value">-</span>
+                  <div class="chip-row-top">
+                    <span class="chip-row-title">メモリ</span>
+                    <span id="memoryUsageValue" class="chip-row-value">-</span>
+                  </div>
+                  <div id="memoryUsageSub" class="chip-row-sub">-</div>
+                  <div class="chip-meter"><div id="memoryUsageBar" class="chip-meter-bar"></div></div>
                 </div>
-                <div id="memoryUsageSub" class="chip-row-sub">-</div>
-                <div class="chip-meter"><div id="memoryUsageBar" class="chip-meter-bar"></div></div>
               </button>
               <button id="chipRowGpu" type="button" class="chip-row">
                 <div class="chip-row-head">
-                  <span class="chip-row-title">GPU</span>
-                  <span id="gpuUsageValue" class="chip-row-value">-</span>
+                  <div class="chip-row-top">
+                    <span class="chip-row-title">GPU</span>
+                    <span id="gpuUsageValue" class="chip-row-value">-</span>
+                  </div>
+                  <div id="gpuUsageSub" class="chip-row-sub">-</div>
+                  <div class="chip-meter"><div id="gpuUsageBar" class="chip-meter-bar"></div></div>
                 </div>
-                <div id="gpuUsageSub" class="chip-row-sub">-</div>
-                <div class="chip-meter"><div id="gpuUsageBar" class="chip-meter-bar"></div></div>
               </button>
             </aside>
             <section class="chip-detail">
@@ -984,12 +1005,22 @@
       const toggleOperationBtn = document.getElementById("toggleOperationBtn");
       const resetResponseBtn = document.getElementById("resetResponseBtn");
       const restartBtn = document.getElementById("restartBtn");
+      const chipRowCpu = document.getElementById("chipRowCpu");
+      const chipRowMemory = document.getElementById("chipRowMemory");
+      const chipRowGpu = document.getElementById("chipRowGpu");
       const cpuUsageValue = document.getElementById("cpuUsageValue");
       const memoryUsageValue = document.getElementById("memoryUsageValue");
       const gpuUsageValue = document.getElementById("gpuUsageValue");
+      const cpuUsageSub = document.getElementById("cpuUsageSub");
+      const memoryUsageSub = document.getElementById("memoryUsageSub");
+      const gpuUsageSub = document.getElementById("gpuUsageSub");
       const cpuUsageBar = document.getElementById("cpuUsageBar");
       const memoryUsageBar = document.getElementById("memoryUsageBar");
       const gpuUsageBar = document.getElementById("gpuUsageBar");
+      const chipDetailTitle = document.getElementById("chipDetailTitle");
+      const chipDetailNow = document.getElementById("chipDetailNow");
+      const chipDetailMeta = document.getElementById("chipDetailMeta");
+      const chipDetailSvg = document.getElementById("chipDetailSvg");
       const chipCheckedAt = document.getElementById("chipCheckedAt");
       let latestTargets = [];
       let baseTargets = [];
@@ -1004,6 +1035,9 @@
       let targetsLoadedOnce = false;
       let targetsRetryTimer = null;
       let monitorViewMode = "monitor";
+      let chipSelectedMetric = "cpu";
+      const chipHistory = { cpu: [], memory: [], gpu: [] };
+      const CHIP_HISTORY_LIMIT = 60;
 
       function normalizeMonitorView(mode) {
         return mode === "graph" ? "graph" : "monitor";
@@ -1529,6 +1563,9 @@
         const nextMode = monitorViewMode === "monitor" ? "graph" : "monitor";
         setMonitorView(nextMode);
       });
+      chipRowCpu.addEventListener("click", () => setChipMetricSelection("cpu"));
+      chipRowMemory.addEventListener("click", () => setChipMetricSelection("memory"));
+      chipRowGpu.addEventListener("click", () => setChipMetricSelection("gpu"));
 
       navHome.addEventListener("click", () => setPage("home"));
       navChip.addEventListener("click", () => setPage("chip"));
@@ -1555,13 +1592,132 @@
         barEl.style.width = `${bounded}%`;
       }
 
+      function setChipMetricSelection(metric) {
+        chipSelectedMetric = metric === "memory" || metric === "gpu" ? metric : "cpu";
+        chipRowCpu.classList.toggle("active", chipSelectedMetric === "cpu");
+        chipRowMemory.classList.toggle("active", chipSelectedMetric === "memory");
+        chipRowGpu.classList.toggle("active", chipSelectedMetric === "gpu");
+        renderChipDetailChart();
+      }
+
+      function pushChipHistory(metric, value) {
+        const history = chipHistory[metric];
+        if (!history) return;
+        const point =
+          typeof value === "number" && Number.isFinite(value)
+            ? Math.max(0, Math.min(100, value))
+            : null;
+        history.push(point);
+        if (history.length > CHIP_HISTORY_LIMIT) {
+          history.splice(0, history.length - CHIP_HISTORY_LIMIT);
+        }
+      }
+
+      function buildLinePath(points) {
+        if (!points.length) return "";
+        if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 0; i < points.length - 1; i += 1) {
+          const p0 = points[i];
+          const p1 = points[i + 1];
+          const cx = (p0.x + p1.x) / 2;
+          d += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
+        return d;
+      }
+
+      function renderChipDetailChart() {
+        const labels = {
+          cpu: "CPU 使用率",
+          memory: "メモリ 使用率",
+          gpu: "GPU 使用率",
+        };
+        const history = chipHistory[chipSelectedMetric] || [];
+        const valid = history.filter((v) => typeof v === "number");
+        const latest = valid.length ? valid[valid.length - 1] : null;
+        chipDetailTitle.textContent = labels[chipSelectedMetric];
+        chipDetailNow.textContent = latest == null ? "-" : `${latest.toFixed(1)}%`;
+        chipDetailMeta.textContent = "過去60サンプル（約5分）";
+
+        const width = 820;
+        const height = 260;
+        const topPad = 12;
+        const bottomPad = 16;
+        const leftPad = 2;
+        const rightPad = 2;
+        const usableW = width - leftPad - rightPad;
+        const usableH = height - topPad - bottomPad;
+        const points = history.map((value, i) => {
+          const x =
+            leftPad + (history.length <= 1 ? 0 : (i / (history.length - 1)) * usableW);
+          const clamped =
+            typeof value === "number" ? Math.max(0, Math.min(100, value)) : 0;
+          const y = topPad + ((100 - clamped) / 100) * usableH;
+          return {
+            x: Math.round(x * 10) / 10,
+            y: Math.round(y * 10) / 10,
+            isValid: typeof value === "number",
+          };
+        });
+
+        const segments = [];
+        let segment = [];
+        points.forEach((p) => {
+          if (p.isValid) {
+            segment.push({ x: p.x, y: p.y });
+          } else if (segment.length) {
+            segments.push(segment);
+            segment = [];
+          }
+        });
+        if (segment.length) {
+          segments.push(segment);
+        }
+
+        const gridYs = [0, 25, 50, 75, 100]
+          .map((percent) => {
+            const y = topPad + ((100 - percent) / 100) * usableH;
+            return `<line x1="0" y1="${y}" x2="${width}" y2="${y}"></line>`;
+          })
+          .join("");
+
+        const linePaths = segments
+          .map((seg) => {
+            const d = buildLinePath(seg);
+            return d ? `<path class="chip-detail-line" d="${d}"></path>` : "";
+          })
+          .join("");
+
+        chipDetailSvg.innerHTML = `
+          <g class="chip-detail-grid">${gridYs}</g>
+          ${
+            linePaths ||
+            `<text x="50%" y="50%" fill="rgba(255,255,255,0.55)" text-anchor="middle" dominant-baseline="middle" font-size="14">データ収集中</text>`
+          }
+        `;
+      }
+
       async function loadSystemUsage() {
         try {
           const data = await fetchJson("/api/system-usage");
+          pushChipHistory("cpu", data.cpuPercent);
+          pushChipHistory("memory", data.memoryPercent);
+          pushChipHistory("gpu", data.gpuPercent);
+
           setUsageDisplay(cpuUsageValue, cpuUsageBar, data.cpuPercent);
           setUsageDisplay(memoryUsageValue, memoryUsageBar, data.memoryPercent);
           setUsageDisplay(gpuUsageValue, gpuUsageBar, data.gpuPercent);
+
+          cpuUsageSub.textContent = data.cpuCores ? `${data.cpuCores} 論理プロセッサ` : "CPU情報なし";
+          memoryUsageSub.textContent =
+            typeof data.memoryUsedGb === "number" && typeof data.memoryTotalGb === "number"
+              ? `${data.memoryUsedGb.toFixed(2)} / ${data.memoryTotalGb.toFixed(2)} GB`
+              : "メモリ情報なし";
+          gpuUsageSub.textContent =
+            data.gpuSource === "wmic" ? "GPUエンジン合算" : "GPU情報取得不可";
+
           chipCheckedAt.textContent = `最終更新: ${new Date(data.checkedAt).toLocaleString("ja-JP")}`;
+          renderChipDetailChart();
         } catch (error) {
           if (chipCheckedAt) {
             chipCheckedAt.textContent = "最終更新: 取得に失敗しました。";
@@ -1703,6 +1859,7 @@
         renderHome(latestTargets);
         renderRows(latestTargets);
       }
+      setChipMetricSelection("cpu");
       setMonitorView(loadSavedMonitorView(), { updateUrl: false });
       window.addEventListener("hashchange", () => {
         const route = getRouteFromHash();
