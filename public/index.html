@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f0f0f" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ResourceMonitor" />
     <link rel="icon" type="image/x-icon" href="/favicon-v3.ico" />
     <link rel="shortcut icon" type="image/x-icon" href="/favicon-v3.ico" />
@@ -123,7 +124,7 @@
           opacity 0.22s ease;
       }
       h2 {
-        margin: 0 0 12px 0;
+        margin: 6px 0 6px 0;
         font-size: 16px;
       }
       .form-row {
@@ -192,7 +193,6 @@
         overflow: auto;
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: rgba(0, 0, 0, 0.42);
       }
       th,
       td {
@@ -202,6 +202,12 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+      #targetTableBody td:first-child {
+        padding-left: 14px;
+      }
+      th.col-name {
+        padding-left: 14px;
       }
       .col-name {
         width: 20%;
@@ -305,6 +311,30 @@
         justify-content: space-between;
         margin-bottom: 10px;
         gap: 8px;
+      }
+      .section-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .monitor-view-toggle-btn {
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        padding: 0 12px;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .list-view-panel {
+        display: none;
+      }
+      .list-view-panel.active {
+        display: block;
       }
       #checkedAt {
         margin: 0;
@@ -454,6 +484,217 @@
         font-size: 18px;
         line-height: 1;
       }
+      .card-layout {
+        display: flex;
+        gap: 16px;
+      }
+      .card-main {
+        flex: 1;
+        min-width: 0;
+      }
+      #page-settings .options {
+        margin-top: 16px;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+      #page-settings .toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        /* border: 1px solid var(--border); */
+        border-radius: 10px;
+        /* background: rgba(0, 0, 0, 0.32); */
+        padding: 12px;
+        gap: 14px;
+        min-width: 0;
+      }
+      #page-settings .toggle > * {
+        min-width: 0;
+      }
+      #page-settings .toggle small {
+        display: block;
+        color: var(--subtext);
+        font-size: 12px;
+      }
+      .settings-inline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .settings-gap-8 {
+        gap: 8px;
+      }
+      .settings-stack {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .settings-stack-8 {
+        gap: 8px;
+      }
+      .settings-stack-tool {
+        flex: none;
+        margin-left: auto;
+        width: min(100%, 760px);
+      }
+      .settings-actions-right {
+        width: 100%;
+        text-align: right;
+      }
+      .settings-input-full {
+        width: 100%;
+      }
+      .settings-input-flex {
+        flex: 1;
+        min-width: 0;
+      }
+      .settings-port-input {
+        width: 150px;
+        flex: 0 0 150px;
+      }
+      #page-settings .btn-ui {
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 8px;
+        cursor: pointer;
+        height: 42px;
+        padding: 0 16px;
+        font-weight: 700;
+      }
+      #page-settings .btn-ui.btn-blue {
+        background: var(--accent);
+        color: #fff;
+      }
+      #page-settings .btn-ui.btn-red {
+        background: var(--danger);
+        color: #fff;
+      }
+      #page-settings .btn-ui.btn-blue:hover {
+        background: var(--accent-hover);
+      }
+      #page-settings .btn-ui.btn-red:hover {
+        background: var(--danger-hover);
+      }
+      .settings-error-text {
+        color: var(--ng);
+        min-height: 1.2em;
+        font-size: 12px;
+      }
+      .chip-layout {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 12px;
+        min-height: 360px;
+      }
+      .chip-sidebar {
+        display: grid;
+        gap: 8px;
+      }
+      .chip-row {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.32);
+        padding: 10px;
+        color: var(--text);
+        text-align: left;
+        cursor: pointer;
+      }
+      .chip-row.active {
+        border-color: rgba(108, 180, 255, 0.8);
+        background: rgba(108, 180, 255, 0.12);
+      }
+      .chip-row-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .chip-row-title {
+        font-size: 13px;
+        color: var(--subtext);
+      }
+      .chip-row-value {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .chip-row-sub {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--subtext);
+      }
+      .chip-meter {
+        margin-top: 8px;
+        width: 100%;
+        height: 6px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .chip-meter-bar {
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #4caf50, #ff9800, #ff6b6b);
+        transition: width 0.35s ease;
+      }
+      .chip-detail {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 12px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 10px;
+      }
+      .chip-detail-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .chip-detail-title {
+        margin: 0;
+        font-size: 20px;
+      }
+      .chip-detail-now {
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .chip-detail-chart {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        min-height: 260px;
+      }
+      .chip-detail-chart svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .chip-detail-grid line {
+        stroke: rgba(255, 255, 255, 0.14);
+        stroke-width: 1;
+      }
+      .chip-detail-line {
+        fill: none;
+        stroke: #6cb4ff;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .chip-detail-meta {
+        font-size: 12px;
+        color: var(--subtext);
+      }
+      .chip-updated {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--subtext);
+      }
       @media (max-width: 900px) {
         .header {
           height: 56px;
@@ -480,16 +721,6 @@
           flex-direction: column;
           align-items: stretch;
         }
-        #page-list .form-row {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-        #page-list .form-row input,
-        #page-list .form-row button {
-          width: 100%;
-          min-width: 0;
-        }
         .form-row input#port {
           width: 100%;
           flex: 1;
@@ -504,28 +735,66 @@
         .table-wrap {
           height: calc(100vh - 380px);
         }
-        #page-list .col-ip,
-        #page-list .col-port,
-        #page-list .col-detail,
-        #page-list .col-ip-cell,
-        #page-list .col-port-cell,
-        #page-list .col-detail-cell {
+        #page-monitor .col-ip,
+        #page-monitor .col-port,
+        #page-monitor .col-detail,
+        #page-monitor .col-ip-cell,
+        #page-monitor .col-port-cell,
+        #page-monitor .col-detail-cell {
           display: none;
         }
-        #page-list .col-name {
+        #page-monitor .col-name {
           width: 36%;
         }
-        #page-list .col-ms {
+        #page-monitor .col-ms {
           width: 22%;
         }
-        #page-list .col-status {
+        #page-monitor .col-status {
           width: 18%;
         }
-        #page-list .col-ops {
+        #page-monitor .col-ops {
           width: 24%;
+        }
+        .card-layout {
+          display: block;
+        }
+        .section-title-row {
+          align-items: stretch;
+          flex-direction: column;
+        }
+        .monitor-view-toggle-btn {
+          width: 100%;
+        }
+        #page-settings .toggle {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .settings-stack-tool {
+          width: 100%;
+          margin-left: 0;
+        }
+        .settings-inline-row {
+          flex-wrap: wrap;
+        }
+        .settings-port-input {
+          width: 100%;
+          flex: 1 1 100%;
+        }
+        .settings-actions-right {
+          text-align: left;
+        }
+        #page-settings .settings-inline-row .btn-ui {
+          width: 100%;
         }
         .home-list {
           grid-template-columns: 1fr;
+        }
+        .chip-layout {
+          grid-template-columns: 1fr;
+          min-height: 0;
+        }
+        .chip-detail-chart {
+          min-height: 200px;
         }
         .home-top {
           grid-template-columns: minmax(0, 1fr) 90px;
@@ -537,7 +806,8 @@
     <div class="container">
       <header class="header">
         <div class="brand">
-          <img class="brand-icon" src="/favicon.ico" alt="ResourceMonitor icon" />
+          <img class="brand-icon" src="/favicon.ico"
+            alt="ResourceMonitor icon" />
           <h1>ResourceMonitor</h1>
         </div>
         <div class="header-buttons">
@@ -546,9 +816,13 @@
             aria-label="ホーム">
             <i class="fa-solid fa-home"></i>
           </button>
-          <button id="navList" type="button"
-            class="icon-btn nav-btn active" title="リスト" aria-label="リスト">
-            <i class="fa-solid fa-list"></i>
+          <button id="navChip" type="button" class="icon-btn nav-btn"
+            title="チップ" aria-label="チップ">
+            <i class="fa-solid fa-microchip"></i>
+          </button>
+          <button id="navMonitor" type="button"
+            class="icon-btn nav-btn active" title="モニター" aria-label="モニター">
+            <i class="fa-solid fa-wave-square"></i>
           </button>
           <button id="navSettings" type="button" class="icon-btn nav-btn"
             title="設定"
@@ -558,79 +832,150 @@
         </div>
       </header>
 
-      <main id="page-home" class="page">
+      <main id="page-home" class="page"></main>
+      <main id="page-chip" class="page">
         <section class="card">
-          <div id="homeSummary" class="home-list"></div>
+          <h2>システム使用率</h2>
+          <div class="chip-layout">
+            <aside class="chip-sidebar">
+              <button id="chipRowCpu" type="button" class="chip-row active">
+                <div class="chip-row-head">
+                  <span class="chip-row-title">CPU</span>
+                  <span id="cpuUsageValue" class="chip-row-value">-</span>
+                </div>
+                <div id="cpuUsageSub" class="chip-row-sub">-</div>
+                <div class="chip-meter"><div id="cpuUsageBar" class="chip-meter-bar"></div></div>
+              </button>
+              <button id="chipRowMemory" type="button" class="chip-row">
+                <div class="chip-row-head">
+                  <span class="chip-row-title">メモリ</span>
+                  <span id="memoryUsageValue" class="chip-row-value">-</span>
+                </div>
+                <div id="memoryUsageSub" class="chip-row-sub">-</div>
+                <div class="chip-meter"><div id="memoryUsageBar" class="chip-meter-bar"></div></div>
+              </button>
+              <button id="chipRowGpu" type="button" class="chip-row">
+                <div class="chip-row-head">
+                  <span class="chip-row-title">GPU</span>
+                  <span id="gpuUsageValue" class="chip-row-value">-</span>
+                </div>
+                <div id="gpuUsageSub" class="chip-row-sub">-</div>
+                <div class="chip-meter"><div id="gpuUsageBar" class="chip-meter-bar"></div></div>
+              </button>
+            </aside>
+            <section class="chip-detail">
+              <div class="chip-detail-head">
+                <h3 id="chipDetailTitle" class="chip-detail-title">CPU 使用率</h3>
+                <div id="chipDetailNow" class="chip-detail-now">-</div>
+              </div>
+              <div class="chip-detail-chart">
+                <svg id="chipDetailSvg" viewBox="0 0 820 260" preserveAspectRatio="none" aria-label="使用率グラフ"></svg>
+              </div>
+              <div id="chipDetailMeta" class="chip-detail-meta">-</div>
+            </section>
+          </div>
+          <div id="chipCheckedAt" class="chip-updated">最終更新: -</div>
         </section>
       </main>
 
-      <main id="page-list" class="page active">
+      <main id="page-monitor" class="page active">
         <section class="card">
-          <h2>監視対象を追加</h2>
-          <form id="targetForm">
-            <div class="form-row">
-              <input id="ip" name="ip"
-                placeholder="IP/アドレス (例: 127.0.0.1, soari.mydns.jp)"
-                required />
-              <input id="port" name="port" type="number" min="1"
-                max="65535" placeholder="ポート (任意)" />
-              <input id="name" name="name"
-                placeholder="表示名 (例: ローカルAPI)" required />
-              <button type="submit">追加</button>
-            </div>
-            <p id="error" class="error"></p>
-          </form>
-        </section>
-
-        <section class="card">
-          <h2>監視一覧</h2>
-          <div class="status-row">
-            <p id="checkedAt" class="muted"></p>
-            <div class="status-actions">
-              <button id="toggleOperationBtn" type="button" class="icon-btn"
-                title="操作モード: OFF" aria-label="操作モード: OFF"><i
-                  class="fa-solid fa-sliders"></i></button>
-              <button id="resetResponseBtn" type="button" class="icon-btn"
-                title="応答時間リセット" aria-label="応答時間リセット"><i
-                  class="fa-solid fa-rotate-right"></i></button>
-            </div>
+          <div class="section-title-row">
+            <h2>監視一覧</h2>
+            <button id="monitorViewToggleBtn" type="button"
+              class="monitor-view-toggle-btn">モニター</button>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th class="col-name">表示名</th>
-                  <th class="col-ip">IP</th>
-                  <th class="col-port">ポート</th>
-                  <th class="col-ms">応答時間</th>
-                  <th class="col-status">状態</th>
-                  <th class="col-detail">詳細</th>
-                  <th id="th-ops" class="col-ops">操作</th>
-                </tr>
-              </thead>
-              <tbody id="targetTableBody"></tbody>
-            </table>
+          <div id="listHomePanel" class="list-view-panel active">
+            <div id="homeSummary" class="home-list"></div>
+          </div>
+          <div id="listTablePanel" class="list-view-panel">
+            <div class="status-row">
+              <p id="checkedAt" class="muted"></p>
+              <div class="status-actions">
+                <button id="toggleOperationBtn" type="button" class="icon-btn"
+                  title="操作モード: OFF" aria-label="操作モード: OFF"><i
+                    class="fa-solid fa-sliders"></i></button>
+                <button id="resetResponseBtn" type="button" class="icon-btn"
+                  title="応答時間リセット" aria-label="応答時間リセット"><i
+                    class="fa-solid fa-rotate-right"></i></button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-name">表示名</th>
+                    <th class="col-ip">IP</th>
+                    <th class="col-port">ポート</th>
+                    <th class="col-ms">応答時間</th>
+                    <th class="col-status">状態</th>
+                    <th class="col-detail">詳細</th>
+                    <th id="th-ops" class="col-ops">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="targetTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </main>
 
       <main id="page-settings" class="page">
-        <section class="card">
-          <h2>設定</h2>
-          <p class="muted">サーバー管理</p>
-          <button id="restartBtn" type="button"
-            class="danger">サーバー再起動</button>
+        <section class="card card-layout">
+          <div class="card-main">
+            <h2>設定</h2>
+            <div class="options">
+              <div class="toggle">
+                <div>
+                  監視対象を追加
+                  <small>IP/アドレス、ポート（任意）、表示名を設定して追加します。</small>
+                </div>
+                <form id="targetForm"
+                  class="settings-stack settings-stack-8 settings-stack-tool">
+                  <div class="settings-inline-row settings-gap-8">
+                    <input id="ip" name="ip" class="settings-input-flex"
+                      placeholder="IP/アドレス (例: 127.0.0.1, 192.168.0.1, example.com)"
+                      required />
+                    <input id="port" name="port" type="number" min="1"
+                      max="65535" class="settings-port-input"
+                      placeholder="ポート (任意)" />
+                  </div>
+                  <input id="name" name="name" class="settings-input-full"
+                    placeholder="表示名 (例: ローカルAPI)" required />
+                  <div id="error" class="settings-error-text"></div>
+                  <div class="settings-actions-right">
+                    <button type="submit" class="btn-ui btn-blue">追加</button>
+                  </div>
+                </form>
+              </div>
+              <div class="toggle">
+                <div>
+                  サーバー再起動
+                  <small>再起動後、数秒間は接続が中断されます。</small>
+                </div>
+                <div class="settings-inline-row settings-gap-8">
+                  <button id="restartBtn" type="button"
+                    class="btn-ui btn-red">サーバー再起動</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
 
     <script>
       const navHome = document.getElementById("navHome");
-      const navList = document.getElementById("navList");
+      const navChip = document.getElementById("navChip");
+      const navMonitor = document.getElementById("navMonitor");
       const navSettings = document.getElementById("navSettings");
       const pageHome = document.getElementById("page-home");
-      const pageList = document.getElementById("page-list");
+      const pageChip = document.getElementById("page-chip");
+      const pageMonitor = document.getElementById("page-monitor");
       const pageSettings = document.getElementById("page-settings");
+      const monitorViewToggleBtn = document.getElementById("monitorViewToggleBtn");
+      const listHomePanel = document.getElementById("listHomePanel");
+      const listTablePanel = document.getElementById("listTablePanel");
       const homeSummary = document.getElementById("homeSummary");
       const form = document.getElementById("targetForm");
       const errorEl = document.getElementById("error");
@@ -639,6 +984,13 @@
       const toggleOperationBtn = document.getElementById("toggleOperationBtn");
       const resetResponseBtn = document.getElementById("resetResponseBtn");
       const restartBtn = document.getElementById("restartBtn");
+      const cpuUsageValue = document.getElementById("cpuUsageValue");
+      const memoryUsageValue = document.getElementById("memoryUsageValue");
+      const gpuUsageValue = document.getElementById("gpuUsageValue");
+      const cpuUsageBar = document.getElementById("cpuUsageBar");
+      const memoryUsageBar = document.getElementById("memoryUsageBar");
+      const gpuUsageBar = document.getElementById("gpuUsageBar");
+      const chipCheckedAt = document.getElementById("chipCheckedAt");
       let latestTargets = [];
       let baseTargets = [];
       const statusById = new Map();
@@ -648,23 +1000,74 @@
       let chartIdCounter = 0;
       const TARGETS_CACHE_KEY = "resource_monitor_targets_cache_v1";
       const PAGE_ROUTE_KEY = "resource_monitor_page_route_v1";
+      const MONITOR_VIEW_KEY = "resource_monitor_view_mode_v1";
       let targetsLoadedOnce = false;
       let targetsRetryTimer = null;
+      let monitorViewMode = "monitor";
+
+      function normalizeMonitorView(mode) {
+        return mode === "graph" ? "graph" : "monitor";
+      }
+
+      function buildHash(page, view = monitorViewMode) {
+        if (page === "monitor") {
+          const normalizedView = normalizeMonitorView(view);
+          const viewSegment = normalizedView === "monitor" ? "praph" : "detail";
+          return `#/monitor/${viewSegment}`;
+        }
+        if (page === "home") return "#/home";
+        if (page === "chip") return "#/chip";
+        if (page === "settings") return "#/settings";
+        return "#/monitor/praph";
+      }
+
+      function setMonitorView(mode, options = {}) {
+        const { updateUrl = true, replace = false } = options;
+        const normalized = normalizeMonitorView(mode);
+        monitorViewMode = normalized;
+        saveMonitorView(normalized);
+        const isMonitor = normalized === "monitor";
+        listHomePanel.classList.toggle("active", isMonitor);
+        listTablePanel.classList.toggle("active", !isMonitor);
+        if (monitorViewToggleBtn) {
+          monitorViewToggleBtn.textContent = isMonitor ? "詳細" : "グラフ";
+          monitorViewToggleBtn.title = isMonitor ? "詳細へ切替" : "グラフへ切替";
+          monitorViewToggleBtn.setAttribute("aria-label", monitorViewToggleBtn.title);
+        }
+        if (updateUrl && pageMonitor.classList.contains("active")) {
+          const nextHash = buildHash("monitor", normalized);
+          if (window.location.hash !== nextHash) {
+            if (replace) {
+              history.replaceState(null, "", nextHash);
+            } else {
+              history.pushState(null, "", nextHash);
+            }
+          }
+        }
+      }
 
       function setPage(page, options = {}) {
-        const { updateUrl = true, replace = false } = options;
+        const { updateUrl = true, replace = false, monitorView } = options;
         pageHome.classList.remove("active");
-        pageList.classList.remove("active");
+        pageChip.classList.remove("active");
+        pageMonitor.classList.remove("active");
         pageSettings.classList.remove("active");
         navHome.classList.remove("active");
-        navList.classList.remove("active");
+        navChip.classList.remove("active");
+        navMonitor.classList.remove("active");
         navSettings.classList.remove("active");
 
-        const normalized = page === "home" || page === "settings" ? page : "list";
+        const normalized =
+          page === "home" || page === "chip" || page === "settings" ? page : "monitor";
         saveCurrentPage(normalized);
 
+        if (normalized === "monitor") {
+          const targetView = monitorView == null ? monitorViewMode : monitorView;
+          setMonitorView(targetView, { updateUrl: false });
+        }
+
         if (updateUrl) {
-          const nextHash = `#/${normalized}`;
+          const nextHash = buildHash(normalized);
           if (window.location.hash !== nextHash) {
             if (replace) {
               history.replaceState(null, "", nextHash);
@@ -684,8 +1087,14 @@
           navSettings.classList.add("active");
           return;
         }
-        pageList.classList.add("active");
-        navList.classList.add("active");
+        if (normalized === "chip") {
+          pageChip.classList.add("active");
+          navChip.classList.add("active");
+          loadSystemUsage();
+          return;
+        }
+        pageMonitor.classList.add("active");
+        navMonitor.classList.add("active");
       }
 
       async function loadTargets() {
@@ -1116,8 +1525,14 @@
         applyOperationMode();
       });
 
+      monitorViewToggleBtn.addEventListener("click", () => {
+        const nextMode = monitorViewMode === "monitor" ? "graph" : "monitor";
+        setMonitorView(nextMode);
+      });
+
       navHome.addEventListener("click", () => setPage("home"));
-      navList.addEventListener("click", () => setPage("list"));
+      navChip.addEventListener("click", () => setPage("chip"));
+      navMonitor.addEventListener("click", () => setPage("monitor"));
       navSettings.addEventListener("click", () => setPage("settings"));
 
       async function fetchJson(url, options) {
@@ -1127,6 +1542,31 @@
           throw new Error(data.error || "通信に失敗しました。");
         }
         return data;
+      }
+
+      function setUsageDisplay(valueEl, barEl, value) {
+        if (typeof value !== "number" || !Number.isFinite(value)) {
+          valueEl.textContent = "-";
+          barEl.style.width = "0%";
+          return;
+        }
+        const bounded = Math.max(0, Math.min(100, value));
+        valueEl.textContent = `${bounded.toFixed(1)}%`;
+        barEl.style.width = `${bounded}%`;
+      }
+
+      async function loadSystemUsage() {
+        try {
+          const data = await fetchJson("/api/system-usage");
+          setUsageDisplay(cpuUsageValue, cpuUsageBar, data.cpuPercent);
+          setUsageDisplay(memoryUsageValue, memoryUsageBar, data.memoryPercent);
+          setUsageDisplay(gpuUsageValue, gpuUsageBar, data.gpuPercent);
+          chipCheckedAt.textContent = `最終更新: ${new Date(data.checkedAt).toLocaleString("ja-JP")}`;
+        } catch (error) {
+          if (chipCheckedAt) {
+            chipCheckedAt.textContent = "最終更新: 取得に失敗しました。";
+          }
+        }
       }
 
       function escapeHtml(value) {
@@ -1168,12 +1608,28 @@
         }
       }
 
-      function getPageFromHash() {
+      function getRouteFromHash() {
         const hash = (window.location.hash || "").toLowerCase();
-        if (hash === "#/home") return "home";
-        if (hash === "#/settings") return "settings";
-        if (hash === "#/list") return "list";
-        return "list";
+        const normalizedHash = hash.replace(/^#/, "");
+        if (normalizedHash === "/home") {
+          return { page: "home", monitorView: loadSavedMonitorView() };
+        }
+        if (normalizedHash === "/chip") {
+          return { page: "chip", monitorView: loadSavedMonitorView() };
+        }
+        if (normalizedHash === "/settings") {
+          return { page: "settings", monitorView: loadSavedMonitorView() };
+        }
+        if (normalizedHash === "/monitor") {
+          return { page: "monitor", monitorView: loadSavedMonitorView() };
+        }
+        const monitorMatch = normalizedHash.match(/^\/monitor\/([^/]+)$/);
+        if (monitorMatch) {
+          const rawView = monitorMatch[2];
+          const mappedView = rawView === "praph" ? "monitor" : rawView === "detail" ? "graph" : rawView;
+          return { page: "monitor", monitorView: normalizeMonitorView(mappedView) };
+        }
+        return { page: "monitor", monitorView: loadSavedMonitorView() };
       }
 
       function saveCurrentPage(page) {
@@ -1187,20 +1643,40 @@
       function loadSavedPage() {
         try {
           const page = localStorage.getItem(PAGE_ROUTE_KEY);
-          if (page === "home" || page === "list" || page === "settings") {
+          if (page === "home" || page === "chip" || page === "monitor" || page === "settings") {
             return page;
           }
-          return "list";
+          return "monitor";
         } catch (e) {
-          return "list";
+          return "monitor";
         }
       }
 
-      function getInitialPage() {
-        if (window.location.hash) {
-          return getPageFromHash();
+      function saveMonitorView(mode) {
+        try {
+          localStorage.setItem(MONITOR_VIEW_KEY, normalizeMonitorView(mode));
+        } catch (e) {
+          // Ignore storage errors
         }
-        return loadSavedPage();
+      }
+
+      function loadSavedMonitorView() {
+        try {
+          const mode = localStorage.getItem(MONITOR_VIEW_KEY);
+          return normalizeMonitorView(mode);
+        } catch (e) {
+          return "monitor";
+        }
+      }
+
+      function getInitialRoute() {
+        if (window.location.hash) {
+          return getRouteFromHash();
+        }
+        return {
+          page: loadSavedPage(),
+          monitorView: loadSavedMonitorView(),
+        };
       }
 
       function scheduleTargetsRetry() {
@@ -1227,14 +1703,20 @@
         renderHome(latestTargets);
         renderRows(latestTargets);
       }
+      setMonitorView(loadSavedMonitorView(), { updateUrl: false });
       window.addEventListener("hashchange", () => {
-        setPage(getPageFromHash(), { updateUrl: false });
+        const route = getRouteFromHash();
+        setPage(route.page, { updateUrl: false, monitorView: route.monitorView });
       });
       loadTargets();
       loadStatus();
-      setPage(getInitialPage(), { updateUrl: true, replace: true });
+      {
+        const route = getInitialRoute();
+        setPage(route.page, { updateUrl: true, replace: true, monitorView: route.monitorView });
+      }
       scheduleTargetsRetry();
       setInterval(loadStatus, 5000);
+      setInterval(loadSystemUsage, 5000);
 
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", async () => {

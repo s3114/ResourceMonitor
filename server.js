@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const net = require("net");
+const os = require("os");
 const { execFile, spawn } = require("child_process");
 const { URL } = require("url");
 
@@ -156,6 +157,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (parsedUrl.pathname === "/api/system-usage" && req.method === "GET") {
+    try {
+      const usage = await getSystemUsage();
+      return sendJson(res, 200, usage);
+    } catch (error) {
+      return sendJson(res, 500, { error: "システム使用率の取得に失敗しました。" });
+    }
+  }
+
   serveStaticFile(parsedUrl.pathname, res);
 });
 
@@ -303,6 +313,99 @@ function pingHost(ip) {
       });
     });
   });
+}
+
+async function getSystemUsage() {
+  const cpuPercent = await sampleCpuUsagePercent(250);
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = Math.max(0, totalMem - freeMem);
+  const memoryPercent = totalMem > 0 ? roundTo1((usedMem / totalMem) * 100) : null;
+  const gpu = await getGpuUsage();
+
+  return {
+    cpuPercent,
+    cpuCores: (os.cpus() || []).length || null,
+    memoryPercent,
+    memoryUsedGb: roundTo2(usedMem / 1024 / 1024 / 1024),
+    memoryTotalGb: roundTo2(totalMem / 1024 / 1024 / 1024),
+    gpuPercent: gpu.percent,
+    gpuSource: gpu.source,
+    checkedAt: new Date().toISOString(),
+  };
+}
+
+function sampleCpuUsagePercent(intervalMs) {
+  const start = readCpuTimes();
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const end = readCpuTimes();
+      const totalDiff = Math.max(1, end.total - start.total);
+      const idleDiff = Math.max(0, end.idle - start.idle);
+      const busyPercent = ((totalDiff - idleDiff) / totalDiff) * 100;
+      resolve(roundTo1(busyPercent));
+    }, intervalMs);
+  });
+}
+
+function readCpuTimes() {
+  const cpus = os.cpus() || [];
+  let idle = 0;
+  let total = 0;
+  cpus.forEach((cpu) => {
+    const times = cpu.times || {};
+    idle += times.idle || 0;
+    total +=
+      (times.user || 0) +
+      (times.nice || 0) +
+      (times.sys || 0) +
+      (times.idle || 0) +
+      (times.irq || 0);
+  });
+  return { idle, total };
+}
+
+function getGpuUsage() {
+  if (process.platform !== "win32") {
+    return Promise.resolve({ percent: null, source: "unsupported_os" });
+  }
+
+  return new Promise((resolve) => {
+    execFile(
+      "wmic",
+      ["path", "Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine", "get", "UtilizationPercentage", "/value"],
+      { timeout: 3000, windowsHide: true },
+      (error, stdout) => {
+        if (error || !stdout) {
+          resolve({ percent: null, source: "wmic_unavailable" });
+          return;
+        }
+
+        const matches = stdout
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith("UtilizationPercentage="))
+          .map((line) => Number(line.split("=")[1]))
+          .filter((value) => Number.isFinite(value) && value >= 0);
+
+        if (!matches.length) {
+          resolve({ percent: null, source: "no_data" });
+          return;
+        }
+
+        const peak = Math.max(...matches);
+        resolve({ percent: roundTo1(peak), source: "wmic" });
+      }
+    );
+  });
+}
+
+function roundTo1(value) {
+  return Math.round(value * 10) / 10;
+}
+
+function roundTo2(value) {
+  return Math.round(value * 100) / 100;
 }
 
 function scheduleRestart() {
