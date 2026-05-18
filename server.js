@@ -287,7 +287,7 @@ function checkEndpoint(ip, port) {
       socket.destroy();
       resolve({
         isUp,
-        responseMs: Date.now() - start,
+        responseMs: isUp ? Date.now() - start : null,
         reason,
       });
     };
@@ -305,14 +305,24 @@ function pingHost(ip) {
   const args = isWindows ? ["-n", "1", "-w", "3000", ip] : ["-c", "1", "-W", "3", ip];
 
   return new Promise((resolve) => {
-    execFile("ping", args, { timeout: 5000 }, (error) => {
+    execFile("ping", args, { timeout: 5000 }, (error, stdout = "", stderr = "") => {
+      const output = `${stdout}\n${stderr}`;
+      const success = isSuccessfulPing(output, isWindows) && !error;
       resolve({
-        isUp: !error,
-        responseMs: Date.now() - start,
-        reason: error ? "ping_failed" : null,
+        isUp: success,
+        responseMs: success ? Date.now() - start : null,
+        reason: success ? null : "ping_failed",
       });
     });
   });
+}
+
+function isSuccessfulPing(output, isWindows) {
+  if (!output) return false;
+  if (isWindows) {
+    return /TTL=/i.test(output);
+  }
+  return /ttl=/i.test(output) || /1 received/i.test(output) || /1 packets received/i.test(output);
 }
 
 async function getSystemUsage() {
