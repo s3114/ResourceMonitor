@@ -37,6 +37,7 @@ const server = http.createServer(async (req, res) => {
         ip: body.ip.trim(),
         port,
         pinned: false,
+        alarmEnabled: false,
         createdAt: new Date().toISOString(),
       };
 
@@ -67,6 +68,7 @@ const server = http.createServer(async (req, res) => {
         name: body.name.trim(),
         ip: body.ip.trim(),
         port: parsePort(body.port),
+        alarmEnabled: parseAlarmEnabled(body.alarmEnabled, targets[idx].alarmEnabled),
         updatedAt: new Date().toISOString(),
       };
 
@@ -260,6 +262,10 @@ function parsePort(value) {
   return Number.isFinite(num) ? num : NaN;
 }
 
+function parseAlarmEnabled(value, fallback = false) {
+  return typeof value === "boolean" ? value : !!fallback;
+}
+
 function normalizeTarget(target) {
   return {
     ...target,
@@ -268,6 +274,7 @@ function normalizeTarget(target) {
     ip: String(target.ip || ""),
     port: parsePort(target.port),
     pinned: !!target.pinned,
+    alarmEnabled: !!target.alarmEnabled,
   };
 }
 

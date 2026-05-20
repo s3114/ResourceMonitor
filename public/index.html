@@ -225,10 +225,10 @@
         width: 12%;
       }
       .col-detail {
-        width: 20%;
+        width: 16%;
       }
       .col-ops {
-        width: 14%;
+        width: 18%;
       }
       th {
         color: #cfcfcf;
@@ -275,6 +275,10 @@
       .mini-btn.pinned {
         color: #ffd36b;
         border-color: #8b6a1c;
+      }
+      .mini-btn.alarm-enabled {
+        color: #7ee787;
+        border-color: #236a35;
       }
       .mini-btn.delete {
         color: #ff9aa4;
@@ -860,7 +864,8 @@
                     <span id="cpuUsageValue" class="chip-row-value">-</span>
                   </div>
                   <div id="cpuUsageSub" class="chip-row-sub">-</div>
-                  <div class="chip-meter"><div id="cpuUsageBar" class="chip-meter-bar"></div></div>
+                  <div class="chip-meter"><div id="cpuUsageBar"
+                      class="chip-meter-bar"></div></div>
                 </div>
               </button>
               <button id="chipRowMemory" type="button" class="chip-row">
@@ -870,7 +875,8 @@
                     <span id="memoryUsageValue" class="chip-row-value">-</span>
                   </div>
                   <div id="memoryUsageSub" class="chip-row-sub">-</div>
-                  <div class="chip-meter"><div id="memoryUsageBar" class="chip-meter-bar"></div></div>
+                  <div class="chip-meter"><div id="memoryUsageBar"
+                      class="chip-meter-bar"></div></div>
                 </div>
               </button>
               <button id="chipRowGpu" type="button" class="chip-row">
@@ -880,7 +886,8 @@
                     <span id="gpuUsageValue" class="chip-row-value">-</span>
                   </div>
                   <div id="gpuUsageSub" class="chip-row-sub">-</div>
-                  <div class="chip-meter"><div id="gpuUsageBar" class="chip-meter-bar"></div></div>
+                  <div class="chip-meter"><div id="gpuUsageBar"
+                      class="chip-meter-bar"></div></div>
                 </div>
               </button>
             </aside>
@@ -890,7 +897,8 @@
                 <div id="chipDetailNow" class="chip-detail-now">-</div>
               </div>
               <div class="chip-detail-chart">
-                <svg id="chipDetailSvg" viewBox="0 0 820 260" preserveAspectRatio="none" aria-label="使用率グラフ"></svg>
+                <svg id="chipDetailSvg" viewBox="0 0 820 260"
+                  preserveAspectRatio="none" aria-label="使用率グラフ"></svg>
               </div>
               <div id="chipDetailMeta" class="chip-detail-meta">-</div>
             </section>
@@ -1028,16 +1036,23 @@
       let operationModeEnabled = false;
       let editingTargetId = null;
       const responseHistoryByTarget = new Map();
+      const offlineCountByTarget = new Map();
+      const alarmTriggeredByTarget = new Map();
+      const activeAlarmTargetIds = new Set();
       let chartIdCounter = 0;
       const TARGETS_CACHE_KEY = "resource_monitor_targets_cache_v1";
       const PAGE_ROUTE_KEY = "resource_monitor_page_route_v1";
       const MONITOR_VIEW_KEY = "resource_monitor_view_mode_v1";
+      const OFFLINE_ALARM_THRESHOLD = 5;
+      const ALARM_AUDIO_SRC = "/Buzzer.mp3";
       let targetsLoadedOnce = false;
       let targetsRetryTimer = null;
       let monitorViewMode = "monitor";
       let chipSelectedMetric = "cpu";
       const chipHistory = { cpu: [], memory: [], gpu: [] };
       const CHIP_HISTORY_LIMIT = 60;
+      let alarmAudioEl = null;
+      let alarmLoopTimer = null;
 
       function normalizeMonitorView(mode) {
         return mode === "graph" ? "graph" : "monitor";
@@ -1189,6 +1204,7 @@
           const viewTargets = getViewTargets();
           latestTargets = viewTargets;
           updateResponseHistory(viewTargets);
+          updateOfflineAlarmState(viewTargets);
           renderHome(viewTargets);
           renderRows(viewTargets);
           checkedAt.textContent = "最終チェック: " + new Date(data.checkedAt).toLocaleString("ja-JP");
@@ -1243,6 +1259,95 @@
             responseHistoryByTarget.delete(key);
           }
         });
+      }
+
+      function updateOfflineAlarmState(targets) {
+        const activeIds = new Set();
+
+        targets.forEach((target) => {
+          if (!target || !target.id) return;
+          activeIds.add(target.id);
+
+          if (!target.alarmEnabled) {
+            offlineCountByTarget.delete(target.id);
+            alarmTriggeredByTarget.delete(target.id);
+            activeAlarmTargetIds.delete(target.id);
+            return;
+          }
+
+          const isUp = !!(target.status && target.status.isUp);
+          if (isUp) {
+            offlineCountByTarget.set(target.id, 0);
+            alarmTriggeredByTarget.set(target.id, false);
+            activeAlarmTargetIds.delete(target.id);
+            return;
+          }
+
+          const nextCount = (offlineCountByTarget.get(target.id) || 0) + 1;
+          offlineCountByTarget.set(target.id, nextCount);
+
+          if (nextCount >= OFFLINE_ALARM_THRESHOLD && !alarmTriggeredByTarget.get(target.id)) {
+            alarmTriggeredByTarget.set(target.id, true);
+            activeAlarmTargetIds.add(target.id);
+          }
+        });
+
+        Array.from(offlineCountByTarget.keys()).forEach((id) => {
+          if (!activeIds.has(id)) {
+            offlineCountByTarget.delete(id);
+          }
+        });
+        Array.from(alarmTriggeredByTarget.keys()).forEach((id) => {
+          if (!activeIds.has(id)) {
+            alarmTriggeredByTarget.delete(id);
+          }
+        });
+        Array.from(activeAlarmTargetIds).forEach((id) => {
+          if (!activeIds.has(id)) {
+            activeAlarmTargetIds.delete(id);
+          }
+        });
+        syncOfflineAlarmLoop();
+      }
+
+      function ensureAlarmAudioReady() {
+        if (!alarmAudioEl) {
+          alarmAudioEl = new Audio(ALARM_AUDIO_SRC);
+          alarmAudioEl.loop = true;
+          alarmAudioEl.preload = "auto";
+          alarmAudioEl.volume = 1.0;
+        }
+        return alarmAudioEl;
+      }
+
+      function playOfflineAlarmBurst() {
+        const audioEl = ensureAlarmAudioReady();
+        if (!audioEl) return;
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+      }
+
+      function syncOfflineAlarmLoop() {
+        if (!activeAlarmTargetIds.size) {
+          if (alarmLoopTimer) {
+            clearTimeout(alarmLoopTimer);
+            alarmLoopTimer = null;
+          }
+          if (alarmAudioEl) {
+            alarmAudioEl.pause();
+            alarmAudioEl.currentTime = 0;
+          }
+          return;
+        }
+
+        if (alarmLoopTimer || (alarmAudioEl && !alarmAudioEl.paused)) {
+          return;
+        }
+
+        playOfflineAlarmBurst();
+        alarmLoopTimer = setTimeout(() => {
+          alarmLoopTimer = null;
+        }, 50);
       }
 
       function renderHome(targets) {
@@ -1420,6 +1525,9 @@
             const ms = t.status ? (up ? `${t.status.responseMs} ms` : "-") : "-";
             const pinClass = t.pinned ? "pinned" : "";
             const pinTitle = t.pinned ? "ピン解除" : "ピン留め";
+            const alarmClass = t.alarmEnabled ? "alarm-enabled" : "";
+            const alarmTitle = t.alarmEnabled ? "アラーム: ON" : "アラーム: OFF";
+            const alarmIcon = t.alarmEnabled ? "fa-bell" : "fa-bell-slash";
             const encodedId = encodeURIComponent(t.id || "");
             return `
             <tr>
@@ -1434,6 +1542,7 @@
                   <button class="mini-btn" data-action="move-up" data-id="${encodedId}" title="上へ"><i class="fa-solid fa-arrow-up"></i></button>
                   <button class="mini-btn" data-action="move-down" data-id="${encodedId}" title="下へ"><i class="fa-solid fa-arrow-down"></i></button>
                   <button class="mini-btn" data-action="edit" data-id="${encodedId}" title="編集"><i class="fa-solid fa-pen"></i></button>
+                  <button class="mini-btn ${alarmClass}" data-action="toggle-alarm" data-id="${encodedId}" title="${alarmTitle}"><i class="fa-solid ${alarmIcon}"></i></button>
                   <button class="mini-btn ${pinClass}" data-action="pin" data-id="${encodedId}" title="${pinTitle}"><i class="fa-solid fa-thumbtack"></i></button>
                   <button class="mini-btn delete" data-action="delete" data-id="${encodedId}" title="削除"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -1508,6 +1617,26 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ pinned: !current?.pinned }),
             });
+          } else if (action === "toggle-alarm") {
+            ensureAlarmAudioReady();
+            const current = latestTargets.find((t) => t.id === id);
+            const nextAlarmEnabled = !current?.alarmEnabled;
+            await fetchJson(`/api/targets/${encodeURIComponent(id)}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: current?.name || "",
+                ip: current?.ip || "",
+                port: current?.port ?? null,
+                alarmEnabled: nextAlarmEnabled,
+              }),
+            });
+            if (!nextAlarmEnabled) {
+              offlineCountByTarget.delete(id);
+              alarmTriggeredByTarget.delete(id);
+              activeAlarmTargetIds.delete(id);
+              syncOfflineAlarmLoop();
+            }
           } else if (action === "edit") {
             editingTargetId = id;
             renderRows(latestTargets);
@@ -1527,6 +1656,7 @@
               name: nameInput.value.trim(),
               ip: ipInput.value.trim(),
               port: portInput.value.trim() === "" ? null : Number(portInput.value.trim()),
+              alarmEnabled: !!latestTargets.find((t) => t.id === id)?.alarmEnabled,
             };
             await fetchJson(`/api/targets/${encodeURIComponent(id)}`, {
               method: "PATCH",
@@ -1585,6 +1715,7 @@
       });
 
       toggleOperationBtn.addEventListener("click", () => {
+        ensureAlarmAudioReady();
         operationModeEnabled = !operationModeEnabled;
         if (!operationModeEnabled) {
           editingTargetId = null;
