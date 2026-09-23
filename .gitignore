@@ -1,2 +1,6 @@
 log/
 data/
+.gitignore
+DARPANET Resource Monitor_files
+DARPANET list.json
+DARPANET Resource Monitor.html

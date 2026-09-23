@@ -714,6 +714,60 @@
         font-size: 12px;
         color: var(--subtext);
       }
+      .telephone-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 6px 0 12px;
+      }
+      .telephone-summary span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 0 10px;
+        color: var(--subtext);
+        font-size: 12px;
+      }
+      .telephone-status {
+        margin: 0 0 12px;
+        min-height: 1.25em;
+        color: var(--subtext);
+        font-size: 12px;
+      }
+      .telephone-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+        gap: 10px;
+      }
+      .telephone-card {
+        min-height: 64px;
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.28);
+        padding: 0 10px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .telephone-card.online {
+        border-color: rgba(76, 175, 80, 0.9);
+      }
+      .telephone-card.offline {
+        border-color: rgba(255, 107, 107, 0.8);
+      }
+      .telephone-resource {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 22px;
+        font-weight: 800;
+      }
       @media (max-width: 900px) {
         .header {
           height: 56px;
@@ -839,6 +893,10 @@
             title="チップ" aria-label="チップ">
             <i class="fa-solid fa-microchip"></i>
           </button>
+          <button id="navTelephone" type="button" class="icon-btn nav-btn"
+            title="内線" aria-label="内線">
+            <i class="fa-solid fa-phone"></i>
+          </button>
           <button id="navMonitor" type="button"
             class="icon-btn nav-btn active" title="モニター" aria-label="モニター">
             <i class="fa-solid fa-wave-square"></i>
@@ -904,6 +962,21 @@
             </section>
           </div>
           <div id="chipCheckedAt" class="chip-updated">最終更新: -</div>
+        </section>
+      </main>
+
+      <main id="page-telephone" class="page">
+        <section class="card">
+          <div class="section-title-row">
+            <h2>内線の状況</h2>
+            <button id="telephoneRefreshBtn" type="button" class="icon-btn"
+              title="内線一覧を更新" aria-label="内線一覧を更新">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+          <div id="telephoneSummary" class="telephone-summary"></div>
+          <p id="telephoneStatus" class="telephone-status">読み込み中...</p>
+          <div id="telephoneGrid" class="telephone-grid"></div>
         </section>
       </main>
 
@@ -996,10 +1069,12 @@
     <script>
       const navHome = document.getElementById("navHome");
       const navChip = document.getElementById("navChip");
+      const navTelephone = document.getElementById("navTelephone");
       const navMonitor = document.getElementById("navMonitor");
       const navSettings = document.getElementById("navSettings");
       const pageHome = document.getElementById("page-home");
       const pageChip = document.getElementById("page-chip");
+      const pageTelephone = document.getElementById("page-telephone");
       const pageMonitor = document.getElementById("page-monitor");
       const pageSettings = document.getElementById("page-settings");
       const monitorViewToggleBtn = document.getElementById("monitorViewToggleBtn");
@@ -1030,6 +1105,10 @@
       const chipDetailMeta = document.getElementById("chipDetailMeta");
       const chipDetailSvg = document.getElementById("chipDetailSvg");
       const chipCheckedAt = document.getElementById("chipCheckedAt");
+      const telephoneRefreshBtn = document.getElementById("telephoneRefreshBtn");
+      const telephoneSummary = document.getElementById("telephoneSummary");
+      const telephoneStatus = document.getElementById("telephoneStatus");
+      const telephoneGrid = document.getElementById("telephoneGrid");
       let latestTargets = [];
       let baseTargets = [];
       const statusById = new Map();
@@ -1066,6 +1145,7 @@
         }
         if (page === "home") return "#/home";
         if (page === "chip") return "#/chip";
+        if (page === "telephone") return "#/telephone";
         if (page === "settings") return "#/settings";
         return "#/monitor/praph";
       }
@@ -1099,15 +1179,19 @@
         const { updateUrl = true, replace = false, monitorView } = options;
         pageHome.classList.remove("active");
         pageChip.classList.remove("active");
+        pageTelephone.classList.remove("active");
         pageMonitor.classList.remove("active");
         pageSettings.classList.remove("active");
         navHome.classList.remove("active");
         navChip.classList.remove("active");
+        navTelephone.classList.remove("active");
         navMonitor.classList.remove("active");
         navSettings.classList.remove("active");
 
         const normalized =
-          page === "home" || page === "chip" || page === "settings" ? page : "monitor";
+          page === "home" || page === "chip" || page === "telephone" || page === "settings"
+            ? page
+            : "monitor";
         saveCurrentPage(normalized);
 
         if (normalized === "monitor") {
@@ -1140,6 +1224,12 @@
           pageChip.classList.add("active");
           navChip.classList.add("active");
           loadSystemUsage();
+          return;
+        }
+        if (normalized === "telephone") {
+          pageTelephone.classList.add("active");
+          navTelephone.classList.add("active");
+          loadTelephoneEndpoints();
           return;
         }
         pageMonitor.classList.add("active");
@@ -1737,8 +1827,10 @@
 
       navHome.addEventListener("click", () => setPage("home"));
       navChip.addEventListener("click", () => setPage("chip"));
+      navTelephone.addEventListener("click", () => setPage("telephone"));
       navMonitor.addEventListener("click", () => setPage("monitor"));
       navSettings.addEventListener("click", () => setPage("settings"));
+      telephoneRefreshBtn.addEventListener("click", () => refreshTelephoneEndpoints());
 
       async function fetchJson(url, options) {
         const res = await fetch(url, options);
@@ -1766,6 +1858,64 @@
         chipRowMemory.classList.toggle("active", chipSelectedMetric === "memory");
         chipRowGpu.classList.toggle("active", chipSelectedMetric === "gpu");
         renderChipDetailChart();
+      }
+
+      function renderTelephoneEndpoints(items, updatedAt) {
+        const endpoints = Array.isArray(items) ? items : [];
+        const sorted = endpoints
+          .filter((item) => {
+            const resource = String(item.resource || "");
+            if (!/^0\d{2}$/.test(resource)) return false;
+            const number = Number(resource);
+            return number >= 11 && number <= 99;
+          })
+          .sort((a, b) => Number(a.resource) - Number(b.resource));
+        const onlineCount = sorted.filter((item) => item.state === "online").length;
+        const offlineCount = sorted.length - onlineCount;
+        const updatedText = updatedAt ? new Date(updatedAt).toLocaleString("ja-JP") : "-";
+
+        telephoneSummary.innerHTML = `
+          <span>合計 ${sorted.length}</span>
+          <span>online ${onlineCount}</span>
+          <span>offline ${offlineCount}</span>
+          <span>最終更新 ${escapeHtml(updatedText)}</span>
+        `;
+        telephoneStatus.textContent = sorted.length ? "" : "表示できる内線がありません。";
+        telephoneGrid.innerHTML = sorted
+          .map((item) => {
+            const state = item.state === "online" ? "online" : "offline";
+            return `
+              <article class="telephone-card ${state}">
+                <span class="telephone-resource">${escapeHtml(item.resource || "-")}</span>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadTelephoneEndpoints() {
+        try {
+          telephoneStatus.textContent = "読み込み中...";
+          const data = await fetchJson("/api/darpanet/endpoints", { cache: "no-store" });
+          renderTelephoneEndpoints(data.endpoints, data.updatedAt);
+        } catch (error) {
+          telephoneStatus.textContent = `読み込みに失敗しました: ${error.message}`;
+        }
+      }
+
+      async function refreshTelephoneEndpoints() {
+        telephoneRefreshBtn.disabled = true;
+        telephoneStatus.textContent = "更新中...";
+        try {
+          const data = await fetchJson("/api/darpanet/endpoints/refresh", {
+            method: "POST",
+          });
+          renderTelephoneEndpoints(data.endpoints, data.updatedAt);
+        } catch (error) {
+          telephoneStatus.textContent = `更新に失敗しました: ${error.message}`;
+        } finally {
+          telephoneRefreshBtn.disabled = false;
+        }
       }
 
       function pushChipHistory(metric, value) {
@@ -1941,6 +2091,9 @@
         if (normalizedHash === "/chip") {
           return { page: "chip", monitorView: loadSavedMonitorView() };
         }
+        if (normalizedHash === "/telephone") {
+          return { page: "telephone", monitorView: loadSavedMonitorView() };
+        }
         if (normalizedHash === "/settings") {
           return { page: "settings", monitorView: loadSavedMonitorView() };
         }
@@ -1967,7 +2120,13 @@
       function loadSavedPage() {
         try {
           const page = localStorage.getItem(PAGE_ROUTE_KEY);
-          if (page === "home" || page === "chip" || page === "monitor" || page === "settings") {
+          if (
+            page === "home" ||
+            page === "chip" ||
+            page === "telephone" ||
+            page === "monitor" ||
+            page === "settings"
+          ) {
             return page;
           }
           return "monitor";
@@ -1994,6 +2153,9 @@
       }
 
       function getInitialRoute() {
+        if (window.location.pathname === "/telephone") {
+          return { page: "telephone", monitorView: loadSavedMonitorView() };
+        }
         if (window.location.hash) {
           return getRouteFromHash();
         }

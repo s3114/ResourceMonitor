@@ -10,6 +10,8 @@ const PORT = Number(process.env.PORT) || 3001;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const TARGETS_FILE = path.join(DATA_DIR, "targets.json");
+const DARPANET_RESOURCE_FILE = path.join(__dirname, "DARPANET Resource Monitor.html");
+const DARPANET_LIST_FILE = path.join(__dirname, "DARPANET list.json");
 
 ensureDataFile();
 
@@ -168,6 +170,45 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (parsedUrl.pathname === "/api/darpanet/endpoints" && req.method === "GET") {
+    try {
+      return sendJson(res, 200, {
+        endpoints: readDarpanetEndpoints(),
+        updatedAt: getFileUpdatedAt(DARPANET_LIST_FILE),
+      });
+    } catch (error) {
+      return sendJson(res, 500, { error: "DARPANET list.json の読み込みに失敗しました。" });
+    }
+  }
+
+  if (parsedUrl.pathname === "/api/darpanet/endpoints/refresh" && req.method === "POST") {
+    try {
+      const endpoints = await refreshDarpanetEndpoints();
+      return sendJson(res, 200, { endpoints, updatedAt: new Date().toISOString() });
+    } catch (error) {
+      return sendJson(res, 500, { error: error.message || "電話端末一覧の更新に失敗しました。" });
+    }
+  }
+
+  if (parsedUrl.pathname === "/telephone" && req.method === "GET") {
+    return serveFile(path.join(PUBLIC_DIR, "index.html"), res);
+  }
+
+  if (
+    (parsedUrl.pathname === "/DARPANET%20Resource%20Monitor.html" ||
+      parsedUrl.pathname === "/DARPANET Resource Monitor.html") &&
+    req.method === "GET"
+  ) {
+    return serveFile(DARPANET_RESOURCE_FILE, res);
+  }
+
+  if (
+    (parsedUrl.pathname === "/DARPANET%20list.json" || parsedUrl.pathname === "/DARPANET list.json") &&
+    req.method === "GET"
+  ) {
+    return serveFile(DARPANET_LIST_FILE, res);
+  }
+
   serveStaticFile(parsedUrl.pathname, res);
 });
 
@@ -192,6 +233,49 @@ function readTargets() {
   } catch (error) {
     return [];
   }
+}
+
+function readDarpanetEndpoints() {
+  const raw = fs.readFileSync(DARPANET_LIST_FILE, "utf-8");
+  const parsed = JSON.parse(raw);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function getFileUpdatedAt(filePath) {
+  try {
+    return fs.statSync(filePath).mtime.toISOString();
+  } catch (error) {
+    return null;
+  }
+}
+
+function refreshDarpanetEndpoints() {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "curl.exe",
+      ["-u", "monitor:hongo2025", "http://192.168.43.150:8088/ari/endpoints"],
+      { timeout: 15000, maxBuffer: 1024 * 1024 * 5 },
+      (error, stdout = "", stderr = "") => {
+        if (error) {
+          const detail = (stderr || error.message || "").trim();
+          reject(new Error(detail || "curl.exe の実行に失敗しました。"));
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(stdout);
+          if (!Array.isArray(parsed)) {
+            reject(new Error("ARI endpoints の応答が配列ではありません。"));
+            return;
+          }
+          fs.writeFileSync(DARPANET_LIST_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+          resolve(parsed);
+        } catch (parseError) {
+          reject(new Error("ARI endpoints の応答JSONを解析できませんでした。"));
+        }
+      }
+    );
+  });
 }
 
 function writeTargets(targets) {
@@ -525,6 +609,290 @@ function serveStaticFile(pathname, res) {
     res.writeHead(200, headers);
     res.end(data);
   });
+}
+
+function serveFile(filePath, res) {
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      return sendText(res, 404, "Not Found");
+    }
+    let body = data;
+    if (filePath === DARPANET_RESOURCE_FILE) {
+      body = injectDarpanetTelephoneExtension(data.toString("utf-8"));
+    }
+    res.writeHead(200, { "Content-Type": getContentType(filePath) });
+    res.end(body);
+  });
+}
+
+function injectDarpanetTelephoneExtension(html) {
+  if (html.includes("darpanet-telephone-extension")) {
+    return html;
+  }
+
+  const extension = String.raw`
+<style id="darpanet-telephone-extension-style">
+  .darpanet-phone-icon-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .darpanet-phone-icon-link svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+  .darpanet-phone-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .darpanet-phone-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .darpanet-phone-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .darpanet-phone-title svg {
+    width: 2rem;
+    height: 2rem;
+  }
+  .darpanet-phone-title h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+  }
+  .darpanet-phone-summary {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .darpanet-phone-summary span {
+    border: 1px solid hsl(var(--nextui-divider, 240 5% 26%));
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .darpanet-refresh-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: hsl(var(--nextui-primary, 212 100% 47%));
+    color: hsl(var(--nextui-primary-foreground, 0 0% 100%));
+    font-weight: 600;
+  }
+  .darpanet-refresh-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  .darpanet-phone-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  .darpanet-phone-card {
+    border: 1px solid hsl(var(--nextui-divider, 240 5% 26%));
+    border-radius: 0.5rem;
+    padding: 0.85rem;
+    background: hsl(var(--nextui-content1, 240 5% 10%));
+  }
+  .darpanet-phone-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .darpanet-phone-resource {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .darpanet-phone-state {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .darpanet-phone-state.online {
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+  }
+  .darpanet-phone-state.offline {
+    background: rgba(248, 113, 113, 0.18);
+    color: #f87171;
+  }
+  .darpanet-phone-meta {
+    margin-top: 0.6rem;
+    color: hsl(var(--nextui-default-500, 240 4% 65%));
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+  .darpanet-phone-status {
+    color: hsl(var(--nextui-default-500, 240 4% 65%));
+    font-size: 0.875rem;
+  }
+</style>
+<script id="darpanet-telephone-extension">
+(function () {
+  const phoneSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.35 1.9.66 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.31 1.85.53 2.81.66A2 2 0 0 1 22 16.92z"/></svg>';
+  const refreshSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>';
+
+  function endpointUrl(path) {
+    return path;
+  }
+
+  function enhanceNav() {
+    const telephoneLinks = Array.from(document.querySelectorAll('a[href$="/telephone"], a[href="/telephone"]'));
+    telephoneLinks.forEach((link) => {
+      if (!link.classList.contains("darpanet-phone-icon-link")) {
+        link.classList.add("darpanet-phone-icon-link");
+        if (!link.querySelector("svg")) {
+          link.insertAdjacentHTML("afterbegin", phoneSvg);
+        }
+      }
+    });
+
+    const desktopTelephone = telephoneLinks.find((link) => link.closest("ul.hidden.lg\\:flex"));
+    const desktopCloud = document.querySelector('ul.hidden.lg\\:flex a[href$="/cloud"], ul.hidden.lg\\:flex a[href="/cloud"]');
+    if (desktopTelephone && desktopCloud) {
+      const phoneItem = desktopTelephone.closest("li");
+      const cloudItem = desktopCloud.closest("li");
+      if (phoneItem && cloudItem && phoneItem !== cloudItem && phoneItem.nextElementSibling !== cloudItem) {
+        cloudItem.parentElement.insertBefore(phoneItem, cloudItem);
+      }
+    }
+  }
+
+  function getRoot() {
+    const heading = Array.from(document.querySelectorAll("h1,h2,h3")).find((el) => el.textContent.trim().includes("内線"));
+    if (heading) {
+      return heading.closest("section") || heading.closest("main") || heading.parentElement;
+    }
+    return document.querySelector("main") || document.querySelector('[data-overlay-container="true"] > div') || document.body;
+  }
+
+  function renderShell(root) {
+    root.innerHTML = [
+      '<section class="darpanet-phone-page">',
+      '  <div class="darpanet-phone-toolbar">',
+      '    <div class="darpanet-phone-title">' + phoneSvg + '<h2>内線の状況</h2></div>',
+      '    <button class="darpanet-refresh-button" type="button" id="darpanetRefreshButton">' + refreshSvg + '<span>更新</span></button>',
+      '  </div>',
+      '  <div class="darpanet-phone-summary" id="darpanetPhoneSummary"></div>',
+      '  <p class="darpanet-phone-status" id="darpanetPhoneStatus">読み込み中...</p>',
+      '  <div class="darpanet-phone-grid" id="darpanetPhoneGrid"></div>',
+      '</section>'
+    ].join("");
+  }
+
+  function renderEndpoints(items, updatedAt) {
+    const grid = document.getElementById("darpanetPhoneGrid");
+    const summary = document.getElementById("darpanetPhoneSummary");
+    const status = document.getElementById("darpanetPhoneStatus");
+    if (!grid || !summary || !status) return;
+
+    const sorted = items.slice().sort((a, b) => String(a.resource || "").localeCompare(String(b.resource || ""), "ja", { numeric: true }));
+    const online = sorted.filter((item) => item.state === "online").length;
+    const offline = sorted.filter((item) => item.state !== "online").length;
+    const updatedLabel = updatedAt ? new Date(updatedAt).toLocaleString("ja-JP") : "-";
+
+    summary.innerHTML = [
+      '<span>合計 ' + sorted.length + '</span>',
+      '<span>online ' + online + '</span>',
+      '<span>offline ' + offline + '</span>',
+      '<span>最終更新 ' + updatedLabel + '</span>'
+    ].join("");
+
+    status.textContent = sorted.length ? "" : "表示できる内線がありません。";
+    grid.innerHTML = sorted.map((item) => {
+      const state = item.state === "online" ? "online" : "offline";
+      const channels = Array.isArray(item.channel_ids) && item.channel_ids.length ? item.channel_ids.join(", ") : "channel none";
+      return [
+        '<article class="darpanet-phone-card">',
+        '  <div class="darpanet-phone-card-head">',
+        '    <span class="darpanet-phone-resource">' + escapeHtml(item.resource || "-") + '</span>',
+        '    <span class="darpanet-phone-state ' + state + '">' + state + '</span>',
+        '  </div>',
+        '  <div class="darpanet-phone-meta">' + escapeHtml(item.technology || "-") + '</div>',
+        '  <div class="darpanet-phone-meta">' + escapeHtml(channels) + '</div>',
+        '</article>'
+      ].join("");
+    }).join("");
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (char) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char];
+    });
+  }
+
+  async function loadEndpoints() {
+    const status = document.getElementById("darpanetPhoneStatus");
+    if (status) status.textContent = "読み込み中...";
+    const response = await fetch(endpointUrl("/api/darpanet/endpoints"), { cache: "no-store" });
+    if (!response.ok) throw new Error("list fetch failed");
+    const data = await response.json();
+    renderEndpoints(data.endpoints || [], data.updatedAt);
+  }
+
+  async function refreshEndpoints() {
+    const button = document.getElementById("darpanetRefreshButton");
+    const status = document.getElementById("darpanetPhoneStatus");
+    if (button) button.disabled = true;
+    if (status) status.textContent = "更新中...";
+    try {
+      const response = await fetch(endpointUrl("/api/darpanet/endpoints/refresh"), { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "refresh failed");
+      renderEndpoints(data.endpoints || [], data.updatedAt);
+    } catch (error) {
+      if (status) status.textContent = "更新に失敗しました: " + error.message;
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  function mount() {
+    enhanceNav();
+    if (!location.pathname.endsWith("/telephone") && !decodeURIComponent(location.pathname).endsWith("DARPANET Resource Monitor.html")) {
+      return;
+    }
+    const root = getRoot();
+    if (!root) return;
+    renderShell(root);
+    const button = document.getElementById("darpanetRefreshButton");
+    if (button) button.addEventListener("click", refreshEndpoints);
+    loadEndpoints().catch((error) => {
+      const status = document.getElementById("darpanetPhoneStatus");
+      if (status) status.textContent = "読み込みに失敗しました: " + error.message;
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mount);
+  } else {
+    mount();
+  }
+  window.addEventListener("load", function () {
+    setTimeout(enhanceNav, 200);
+  });
+})();
+</script>`;
+
+  return html.replace("</body>", `${extension}</body>`);
 }
 
 function getContentType(filePath) {
