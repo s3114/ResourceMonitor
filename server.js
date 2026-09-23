@@ -10,8 +10,7 @@ const PORT = Number(process.env.PORT) || 3001;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
 const TARGETS_FILE = path.join(DATA_DIR, "targets.json");
-const DARPANET_RESOURCE_FILE = path.join(__dirname, "DARPANET Resource Monitor.html");
-const DARPANET_LIST_FILE = path.join(__dirname, "DARPANET list.json");
+const DARPANET_LIST_FILE = path.join(__dirname, "data\\asterisk.json");
 
 ensureDataFile();
 
@@ -51,7 +50,11 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  if (targetId && /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) && req.method === "PATCH") {
+  if (
+    targetId &&
+    /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) &&
+    req.method === "PATCH"
+  ) {
     try {
       const body = await readJsonBody(req);
       const validation = validateTargetInput(body);
@@ -70,7 +73,10 @@ const server = http.createServer(async (req, res) => {
         name: body.name.trim(),
         ip: body.ip.trim(),
         port: parsePort(body.port),
-        alarmEnabled: parseAlarmEnabled(body.alarmEnabled, targets[idx].alarmEnabled),
+        alarmEnabled: parseAlarmEnabled(
+          body.alarmEnabled,
+          targets[idx].alarmEnabled,
+        ),
         updatedAt: new Date().toISOString(),
       };
 
@@ -81,7 +87,11 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  if (targetId && /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) && req.method === "DELETE") {
+  if (
+    targetId &&
+    /^\/api\/targets\/[^/]+$/.test(parsedUrl.pathname) &&
+    req.method === "DELETE"
+  ) {
     const targets = readTargets();
     const idx = targets.findIndex((t) => t.id === targetId);
     if (idx < 0) {
@@ -92,7 +102,11 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true, removed });
   }
 
-  if (targetId && parsedUrl.pathname.endsWith("/pin") && req.method === "POST") {
+  if (
+    targetId &&
+    parsedUrl.pathname.endsWith("/pin") &&
+    req.method === "POST"
+  ) {
     try {
       const body = await readJsonBody(req);
       const targets = readTargets();
@@ -102,7 +116,8 @@ const server = http.createServer(async (req, res) => {
       }
 
       const current = targets[idx];
-      const shouldPin = typeof body.pinned === "boolean" ? body.pinned : !current.pinned;
+      const shouldPin =
+        typeof body.pinned === "boolean" ? body.pinned : !current.pinned;
       current.pinned = shouldPin;
       current.updatedAt = new Date().toISOString();
       moveByPinRule(targets, idx, shouldPin);
@@ -113,12 +128,23 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  if (targetId && parsedUrl.pathname.endsWith("/move") && req.method === "POST") {
+  if (
+    targetId &&
+    parsedUrl.pathname.endsWith("/move") &&
+    req.method === "POST"
+  ) {
     try {
       const body = await readJsonBody(req);
-      const direction = body.direction === "up" ? "up" : body.direction === "down" ? "down" : null;
+      const direction =
+        body.direction === "up"
+          ? "up"
+          : body.direction === "down"
+            ? "down"
+            : null;
       if (!direction) {
-        return sendJson(res, 400, { error: "direction は up/down を指定してください。" });
+        return sendJson(res, 400, {
+          error: "direction は up/down を指定してください。",
+        });
       }
 
       const targets = readTargets();
@@ -146,12 +172,18 @@ const server = http.createServer(async (req, res) => {
         status: Number.isInteger(target.port)
           ? await checkEndpoint(target.ip, target.port)
           : await pingHost(target.ip),
-      }))
+      })),
     );
-    return sendJson(res, 200, { targets: statuses, checkedAt: new Date().toISOString() });
+    return sendJson(res, 200, {
+      targets: statuses,
+      checkedAt: new Date().toISOString(),
+    });
   }
 
-  if (parsedUrl.pathname === "/api/response-time/reset" && req.method === "POST") {
+  if (
+    parsedUrl.pathname === "/api/response-time/reset" &&
+    req.method === "POST"
+  ) {
     return sendJson(res, 200, { ok: true });
   }
 
@@ -166,27 +198,42 @@ const server = http.createServer(async (req, res) => {
       const usage = await getSystemUsage();
       return sendJson(res, 200, usage);
     } catch (error) {
-      return sendJson(res, 500, { error: "システム使用率の取得に失敗しました。" });
+      return sendJson(res, 500, {
+        error: "システム使用率の取得に失敗しました。",
+      });
     }
   }
 
-  if (parsedUrl.pathname === "/api/darpanet/endpoints" && req.method === "GET") {
+  if (
+    parsedUrl.pathname === "/api/darpanet/endpoints" &&
+    req.method === "GET"
+  ) {
     try {
       return sendJson(res, 200, {
         endpoints: readDarpanetEndpoints(),
         updatedAt: getFileUpdatedAt(DARPANET_LIST_FILE),
       });
     } catch (error) {
-      return sendJson(res, 500, { error: "DARPANET list.json の読み込みに失敗しました。" });
+      return sendJson(res, 500, {
+        error: "data\\asterisk.json の読み込みに失敗しました。",
+      });
     }
   }
 
-  if (parsedUrl.pathname === "/api/darpanet/endpoints/refresh" && req.method === "POST") {
+  if (
+    parsedUrl.pathname === "/api/darpanet/endpoints/refresh" &&
+    req.method === "POST"
+  ) {
     try {
       const endpoints = await refreshDarpanetEndpoints();
-      return sendJson(res, 200, { endpoints, updatedAt: new Date().toISOString() });
+      return sendJson(res, 200, {
+        endpoints,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
-      return sendJson(res, 500, { error: error.message || "電話端末一覧の更新に失敗しました。" });
+      return sendJson(res, 500, {
+        error: error.message || "電話端末一覧の更新に失敗しました。",
+      });
     }
   }
 
@@ -194,18 +241,7 @@ const server = http.createServer(async (req, res) => {
     return serveFile(path.join(PUBLIC_DIR, "index.html"), res);
   }
 
-  if (
-    (parsedUrl.pathname === "/DARPANET%20Resource%20Monitor.html" ||
-      parsedUrl.pathname === "/DARPANET Resource Monitor.html") &&
-    req.method === "GET"
-  ) {
-    return serveFile(DARPANET_RESOURCE_FILE, res);
-  }
-
-  if (
-    (parsedUrl.pathname === "/DARPANET%20list.json" || parsedUrl.pathname === "/DARPANET list.json") &&
-    req.method === "GET"
-  ) {
+  if (parsedUrl.pathname === "/data/asterisk.json" && req.method === "GET") {
     return serveFile(DARPANET_LIST_FILE, res);
   }
 
@@ -268,12 +304,16 @@ function refreshDarpanetEndpoints() {
             reject(new Error("ARI endpoints の応答が配列ではありません。"));
             return;
           }
-          fs.writeFileSync(DARPANET_LIST_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+          fs.writeFileSync(
+            DARPANET_LIST_FILE,
+            JSON.stringify(parsed, null, 2),
+            "utf-8",
+          );
           resolve(parsed);
         } catch (parseError) {
           reject(new Error("ARI endpoints の応答JSONを解析できませんでした。"));
         }
-      }
+      },
     );
   });
 }
@@ -317,11 +357,17 @@ function validateTargetInput(body) {
   }
 
   if (!isValidHost(ip)) {
-    return { ok: false, error: "IPまたはホスト名（例: soari.mydns.jp）を入力してください。" };
+    return {
+      ok: false,
+      error: "IPまたはホスト名（例: soari.mydns.jp）を入力してください。",
+    };
   }
 
   if (port !== null && (!Number.isInteger(port) || port < 1 || port > 65535)) {
-    return { ok: false, error: "ポートは1-65535の整数で入力してください（未入力も可）。" };
+    return {
+      ok: false,
+      error: "ポートは1-65535の整数で入力してください（未入力も可）。",
+    };
   }
 
   return { ok: true };
@@ -393,18 +439,25 @@ function checkEndpoint(ip, port) {
 function pingHost(ip) {
   const start = Date.now();
   const isWindows = process.platform === "win32";
-  const args = isWindows ? ["-n", "1", "-w", "3000", ip] : ["-c", "1", "-W", "3", ip];
+  const args = isWindows
+    ? ["-n", "1", "-w", "3000", ip]
+    : ["-c", "1", "-W", "3", ip];
 
   return new Promise((resolve) => {
-    execFile("ping", args, { timeout: 5000 }, (error, stdout = "", stderr = "") => {
-      const output = `${stdout}\n${stderr}`;
-      const success = isSuccessfulPing(output, isWindows) && !error;
-      resolve({
-        isUp: success,
-        responseMs: success ? Date.now() - start : null,
-        reason: success ? null : "ping_failed",
-      });
-    });
+    execFile(
+      "ping",
+      args,
+      { timeout: 5000 },
+      (error, stdout = "", stderr = "") => {
+        const output = `${stdout}\n${stderr}`;
+        const success = isSuccessfulPing(output, isWindows) && !error;
+        resolve({
+          isUp: success,
+          responseMs: success ? Date.now() - start : null,
+          reason: success ? null : "ping_failed",
+        });
+      },
+    );
   });
 }
 
@@ -413,7 +466,11 @@ function isSuccessfulPing(output, isWindows) {
   if (isWindows) {
     return /TTL=/i.test(output);
   }
-  return /ttl=/i.test(output) || /1 received/i.test(output) || /1 packets received/i.test(output);
+  return (
+    /ttl=/i.test(output) ||
+    /1 received/i.test(output) ||
+    /1 packets received/i.test(output)
+  );
 }
 
 async function getSystemUsage() {
@@ -421,7 +478,8 @@ async function getSystemUsage() {
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
   const usedMem = Math.max(0, totalMem - freeMem);
-  const memoryPercent = totalMem > 0 ? roundTo1((usedMem / totalMem) * 100) : null;
+  const memoryPercent =
+    totalMem > 0 ? roundTo1((usedMem / totalMem) * 100) : null;
   const gpu = await getGpuUsage();
 
   return {
@@ -474,7 +532,13 @@ function getGpuUsage() {
   return new Promise((resolve) => {
     execFile(
       "wmic",
-      ["path", "Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine", "get", "UtilizationPercentage", "/value"],
+      [
+        "path",
+        "Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine",
+        "get",
+        "UtilizationPercentage",
+        "/value",
+      ],
       { timeout: 3000, windowsHide: true },
       (error, stdout) => {
         if (error || !stdout) {
@@ -496,7 +560,7 @@ function getGpuUsage() {
 
         const peak = Math.max(...matches);
         resolve({ percent: roundTo1(peak), source: "wmic" });
-      }
+      },
     );
   });
 }
@@ -521,11 +585,15 @@ function scheduleRestart() {
       });
       child.unref();
     } else {
-      const child = spawn(process.execPath, [path.join(__dirname, "server.js")], {
-        cwd: __dirname,
-        detached: true,
-        stdio: "ignore",
-      });
+      const child = spawn(
+        process.execPath,
+        [path.join(__dirname, "server.js")],
+        {
+          cwd: __dirname,
+          detached: true,
+          stdio: "ignore",
+        },
+      );
       child.unref();
     }
   } catch (error) {
@@ -608,20 +676,6 @@ function serveStaticFile(pathname, res) {
     }
     res.writeHead(200, headers);
     res.end(data);
-  });
-}
-
-function serveFile(filePath, res) {
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      return sendText(res, 404, "Not Found");
-    }
-    let body = data;
-    if (filePath === DARPANET_RESOURCE_FILE) {
-      body = injectDarpanetTelephoneExtension(data.toString("utf-8"));
-    }
-    res.writeHead(200, { "Content-Type": getContentType(filePath) });
-    res.end(body);
   });
 }
 
@@ -909,7 +963,9 @@ function getContentType(filePath) {
 }
 
 function sendJson(res, statusCode, body) {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+  });
   res.end(JSON.stringify(body));
 }
 
