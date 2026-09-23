@@ -285,33 +285,48 @@ function getFileUpdatedAt(filePath) {
   }
 }
 
+const curlCommand = process.platform === "win32" ? "curl.exe" : "curl";
+
 function refreshDarpanetEndpoints() {
   return new Promise((resolve, reject) => {
     execFile(
-      "curl.exe",
-      ["-u", "monitor:hongo2025", "http://192.168.43.150:8088/ari/endpoints"],
+      curlCommand,
+      [
+        "-u",
+        "monitor:hongo2025",
+        "http://192.168.43.150:8088/ari/endpoints",
+      ],
       { timeout: 15000, maxBuffer: 1024 * 1024 * 5 },
       (error, stdout = "", stderr = "") => {
         if (error) {
           const detail = (stderr || error.message || "").trim();
-          reject(new Error(detail || "curl.exe の実行に失敗しました。"));
+          reject(
+            new Error(detail || `${curlCommand} の実行に失敗しました。`)
+          );
           return;
         }
 
         try {
           const parsed = JSON.parse(stdout);
+
           if (!Array.isArray(parsed)) {
-            reject(new Error("ARI endpoints の応答が配列ではありません。"));
+            reject(
+              new Error("ARI endpoints の応答が配列ではありません。")
+            );
             return;
           }
+
           fs.writeFileSync(
             DARPANET_LIST_FILE,
             JSON.stringify(parsed, null, 2),
             "utf-8",
           );
+
           resolve(parsed);
         } catch (parseError) {
-          reject(new Error("ARI endpoints の応答JSONを解析できませんでした。"));
+          reject(
+            new Error("ARI endpoints の応答JSONを解析できませんでした。")
+          );
         }
       },
     );
